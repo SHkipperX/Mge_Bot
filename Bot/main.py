@@ -2,6 +2,7 @@ from typing import *
 from vk_api import VkApi
 from vk_api.bot_longpoll import VkBotEvent, VkBotLongPoll, VkBotEventType, VkBotMessageEvent
 from vk_api.keyboard import VkKeyboard, VkKeyboardButton
+from threading import Thread
 from datetime import datetime as dt
 from random import randint as rnd
 from orm_connector import db_session, __all_models
@@ -69,25 +70,7 @@ class Commands:
             self.sender(message=f'@id{self.user_id}(USER) Зарегестрирован на участие в МГЕ схватках!')
 
     def command_handler(self) -> None:
-        """
-        Переадрсация
-        на
-        команды
-        """
-
-        if self.message in _cm['mge']:
-            if self.reply_user:
-                self.mge_for_two()
-            else:
-                self.mge_for_one()
-        elif self.message in _cm['stat']:
-            pass
-        elif self.message in _cm['top']:
-            pass
-        elif self.message in _cm['reg']:
-            self.register()
-        elif self.message in _cm['nick']:
-            pass
+        pass
 
     def create_keyboard(self, *args) -> VkKeyboard:
         """
@@ -156,3 +139,7 @@ if __name__ == '__main__':
     token = setting['token']
     group_id = setting['group_id']
     app_id = setting['app_id']
+
+    bot = Bot(token, group_id, app_id)
+    thr = Thread(target=bot.runner)
+    thr.start()
