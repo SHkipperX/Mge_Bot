@@ -41,3 +41,11 @@ class BaseCharacter:
     @property
     def level_damage(self) -> int:
         return self.damage.level
+
+    @property
+    def level_accuracy(self) -> int:
+        return self.accuracy.level
+
+    @property
+    def level_health(self) -> int:
+        return self.health.level
