@@ -1,3 +1,5 @@
+from typing import Tuple
+
 from random import random
 
 from stats import Damage, Accuracy, Health
@@ -23,10 +25,19 @@ class BaseCharacter:
         self.accuracy = Accuracy(accuracy_value, percent_accuracy, max_level_accuracy)
         self.health = Health(health_value, percent_health, max_level_health)
 
-    def hit(self, target: str = BODY) -> bool:
+    def hit(self, target: str = BODY) -> Tuple[bool, int]:
         if target == BODY:
-            return self.accuracy.get_chance_body()
+            return self.accuracy.get_chance_body(), self.damage.damage
         elif target == HEAD:
-            return self.accuracy.get_chance_head()
+            return self.accuracy.get_chance_head(), self.damage.damage * 2
         else:
             raise ValueError('An invalid value was passed to the target parameter')
+
+    def level_up(self, count_level: int = 1):
+        self.damage.level_up(count_level)
+        self.accuracy.level_up(count_level)
+        self.health.level_up(count_level)
+
+    @property
+    def level_damage(self) -> int:
+        return self.damage.level
