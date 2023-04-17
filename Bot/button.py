@@ -23,10 +23,10 @@ BUTTONS_SETTINGS: dict[str, dict] = {
     'deny': {'label': 'отказать', 'color': RED, 'payload': {'type': 'deny'}}
 }
 
-incorrect_user_click = ['1', '2', '3', '4', '5', '6', '7', '8']
-ius = {"type": "show_snackbar", "text": f"{random.choice(incorrect_user_click)}"}
+sp_unccor = ['1', '2', '3', '4', '5', '6', '7', '8']
+ius = {"type": "show_snackbar", "text": None}
 
-correct_user_click = ['1', '2', '3', '4', '5', '6', '7', '8']
-cus = {"type": "show_snackbar", "text": f"{random.choice(correct_user_click)}"}
+sp_corr = ['1', '2', '3', '4', '5', '6', '7', '8']
+cus = {"type": "show_snackbar", "text": None}
 
 

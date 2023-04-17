@@ -12,23 +12,28 @@ import json
 # Другое_2
 from orm_connector import db_session
 from orm_connector.__all_models import User
-from functions import create_keyboard, decoding_orm
+from functions import create_keyboard, decoding_orm, Rock_Paper_Scissors
 from button import BUTTONS_SETTINGS as bs
 from Mode_text import *
-from button import ius, cus  # ius - incorrect user send
+from button import ius, cus, sp_unccor, sp_corr
 
 # VK нужен для обращения к методам API через код
 VK = None
 Upload = None
-battle: dict[int, dict] = dict()
+invite: dict[int, list[int, bool]] = dict()
 preparation: dict = dict()
 
 Accept = bs.get('accept')
 Deny = bs.get('deny')
-Rock, Paper, Sciss = bs['rock'], bs['paper'], bs['sciss']
+Rock, Paper, Sciss = bs['rock'], bs['paper'], bs['scissors']
 
 
-class Event_command:
+def dump_ius():
+    ius['text'] = choice(sp_unccor)
+    return json.dumps(ius)
+
+
+class Event_commands:
     """
     Doc
     """
@@ -39,46 +44,88 @@ class Event_command:
         self.peer_id: int = event_dict['peer_id']
         self.con_mes_id: int = event_dict['conversation_message_id']
         self.payload: dict = event_dict['payload']
-        squad = self.payload.get('rps')
+        squad = self.payload.get('squad')
 
-        if self.user_id in battle and not squad == 'rps':
-            self.battel()
+        if self.user_id in invite and not squad == 'rps':
+            self.battle()
 
         elif squad == 'rps':
             self.rps()
 
-    def rps(self):
-        """Rock-Paper-Scissors"""
+        else:
+            self.event_sender(dump_ius())
 
-        preparation[self.user_id]['opt'] = self.payload['type']
-        id_2 = preparation[self.user_id]['id']
-        if preparation[id_2]['opt']:
-            """
+    def rps(self):
+        """Rock-Paper-Scissors
             Выбор победителя
             """
+        if not preparation[self.user_id]['opt']:
+            preparation[self.user_id]['opt'] = self.payload['type']
+            self.event_sender(None)
 
-    def battel(self):
+        id_2 = preparation[self.user_id]['id']
+        if preparation[id_2]['opt'] and preparation[self.user_id]['opt']:
+            db_sess = db_session.create_session()
 
-        if battle[self.user_id][self.user_id]:
+            parm_1 = [self.user_id, preparation[self.user_id]['opt']]
+            parm_2 = [id_2, preparation[id_2]['opt']]
+            flag = Rock_Paper_Scissors(param_1=parm_1, param_2=parm_2)
+
+            user_1 = flag['user_1']
+            user_2 = flag['user_2']
+
+            id_1, status_1 = user_1
+            id_2, status_2 = user_2
+
+            user_name_1 = db_sess.query(User).filter_by(user_id=id_1).first().user_name
+            user_name_2 = db_sess.query(User).filter_by(user_id=id_2).first().user_name
+
+            if status_1:
+                """id_1 победил, id_2 проиграл"""
+                message = f'@id{id_1}({user_name_1}) Победил @id{id_2}({user_name_2})\n{parm_1[1]} Vs {parm_2[1]}'
+                self.messages_edit(message=message)
+            elif status_1 is False:
+                """id_1 проиграл, id_2 победил"""
+                message = f'@id{id_1}({user_name_1}) Проиграл @id{id_2}({user_name_2})\n{parm_1[1]} Vs {parm_2[1]}'
+                self.messages_edit(message=message)
+            else:
+                """Ничья"""
+                message = f'{parm_1[1]} Vs {parm_2[1]}\nПереигрываем'
+                keyboard = create_keyboard(Rock, Paper, Sciss)
+                preparation[self.user_id]['opt'] = None
+                preparation[id_2]['opt'] = None
+                self.messages_edit(message=message, keyboard=keyboard)
+
+    def battle(self):
+        id_1, flag_1 = invite[self.user_id]
+        id_2, flag_2 = invite[id_1]
+        print(f'{id_1}:{flag_1}\n{id_2}:{flag_2}')
+        if flag_2:
             self.event_sender(event_data=json.dumps(ius))
         else:
             if self.payload['type'] == 'accept':
-                battle[self.user_id][self.user_id] = True
-                id_2, id_1 = battle[self.user_id].keys()  # ответ даёт 2 пользователь, поэтому сначала идёт id_2
+                """
+                Значения в словаре хранятся следующим образом:
+                opt - это выбор предмета из Камень, Ножницы, Бумага
+                {
+                user_1: {'id': user_2, 'opt': None}, #user_1 привязан к user_2
+                user_2: {'id': user_1, 'opt': None}  #user_2 привязан к user_1
+                } 
+                """
 
-                preparation[id_2] = {'id': id_1, 'opt': None}
                 preparation[id_1] = {'id': id_2, 'opt': None}
-
-                self.messages_edit(message='Тут будет продолжение')
+                preparation[id_2] = {'id': id_1, 'opt': None}
+                keyboard = create_keyboard(Rock, Paper, Sciss)
+                self.messages_edit(message='Тут будет продолжение', keyboard=keyboard)
             else:
-                for user in battle[self.user_id]:
-                    del battle[user]
+                del invite[id_1], invite[id_2]
 
                 self.messages_edit(message=f'@id{self.user_id} отказался от битвы')
 
     def event_sender(self, event_data: str) -> None:
         """
         Подробнее смотреть док-ю -> https://dev.vk.com/method/messages.sendMessageEventAnswer
+        Эфемерное сообщение
         :param event_data: (dict) Объект действия, которое должно произойти после нажатия на кнопку
         :return:
         """
@@ -89,9 +136,9 @@ class Event_command:
                       keyboard: Optional[VkKeyboard] = None) -> None:
         """
         Редактирование сообщения
-        :param message:
-        :param attachment:
-        :param keyboard:
+        :param message: текст не более 1000 символов
+        :param attachment: фото/аудио фаил
+        :param keyboard: клавиатура inline/no-inline
         :return:
         """
         post = {'peer_id': self.peer_id, 'user_id': self.user_id, 'message': message, 'attachment': attachment,
@@ -132,7 +179,7 @@ class Commands:
         :return:
         """
         if self.message.split()[0] == 'mge':
-            self.mge()
+            self.invitation_to_the_mge()
             if self.reply_user:
                 """Вызов определённого пользователя на дуэль"""
                 pass
@@ -149,10 +196,11 @@ class Commands:
 
     def new_nickname(self) -> None:
         """
+        Смена имени в database
         :return None:
         """
-        result = 'Error'
         nickname = (' ').join(self.event_dict['text'].split()[1:])
+        result = f'Error: {len(nickname)} < 16 символов'
         if len(nickname) <= 16:
             db_sess = db_session.create_session()
             db_sess.query(User).filter_by(user_id=self.user_id).update({'user_name': nickname})
@@ -182,7 +230,7 @@ class Commands:
         Отправка сообщения в беседу
         :param message: (str) отправляемый текст
         :param keyboard: (VkKeyBoard) клавиатура к сообщению
-        :param attachments: (object) фото/аудио фаил
+        :param attachments: (object) фото/аудио фаил (паблик не может оправлять видео фаилы)
         :return:
         """
         post = {'peer_id': self.peer_id, 'chat_id': 100000000, 'message': message, 'keyboard': keyboard,
@@ -190,7 +238,7 @@ class Commands:
                 'random_id': get_random_id()}
         VK.messages.send(**post)
 
-    def mge(self):
+    def invitation_to_the_mge(self) -> None:
         db_sess = db_session.create_session()
         user = db_sess.query(User).filter_by(user_id=self.user_id).first()
         user_2 = db_sess.query(User).filter_by(user_id=self.reply_user).first()
@@ -202,18 +250,19 @@ class Commands:
             id_2: int = user_2.user_id
             name_2: str = user_2.user_name
 
-            if id_1 in battle:
-                self.sender(message='Error')
-            elif id_2 in battle:
-                self.sender(message='Error')
+            if id_1 in invite:
+                self.sender(message=f'Error: @id{id_1} is invite')
+            elif id_2 in invite:
+                self.sender(message=f'Error: @id{id_2} is invite')
             else:
                 text = f'@id{id_1}({name_2.title()}), Вас вызывает на дуэль господин @id{id_2}({name.title()})'
                 keyboard = create_keyboard(Accept, Deny)
-                battle[id_1] = {id_1: True, id_2: False}
-                battle[id_2] = {id_2: False, id_1: True}
+                invite[id_1] = [id_2, False]
+                invite[id_2] = [id_1, True]
 
                 self.sender(message=text, keyboard=keyboard)
-
+        else:
+            self.sender(message='Error')
         db_sess.close()
 
 
@@ -241,12 +290,12 @@ class Bot:
         while True:
             try:
                 for event in self.VkBotLongPoll.listen():
-                    print(T_RED, M_FAT, event, M_0)
-                    print(event.message)
+                    # print(T_RED, M_FAT, event, M_0)
+                    # print(event.message)
                     if event.type == VkBotEventType.MESSAGE_NEW and event.from_chat:
                         Commands(event_dict=event.message)
                     elif event.type == VkBotEventType.MESSAGE_EVENT:
-                        Event_command(event_dict=event.object)
+                        Event_commands(event_dict=event.object)
             except Exception as error:
                 print(T_RED, M_FAT, error, '\n', format_exc(), M_0)
 
