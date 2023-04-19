@@ -1,4 +1,6 @@
 # Vk_api
+import time
+
 from vk_api import VkApi, VkUpload
 from vk_api.bot_longpoll import VkBotEvent, VkBotLongPoll, VkBotEventType, VkBotMessageEvent
 from vk_api.keyboard import VkKeyboard
@@ -8,6 +10,8 @@ from random import choice, randint
 from typing import *
 from traceback import format_exc
 from datetime import datetime as date
+from datetime import timedelta as delta
+from threading import Thread
 import json
 # Другое_2
 from orm_connector import db_session
@@ -26,6 +30,57 @@ preparation: dict = dict()
 Accept = bs.get('accept')
 Deny = bs.get('deny')
 Rock, Paper, Sciss = bs['rock'], bs['paper'], bs['scissors']
+
+"""
+Делается...
+"""
+def checker_time_mge():
+    def sender() -> None:
+        post = {'peer_id': peer_id, 'chat_id': 100000000, 'message': message,
+                'random_id': get_random_id()}
+        VK.messages.send(**post)
+
+    wait = delta(seconds=5, minutes=0)
+    while True:
+        time.sleep(1)
+        try:
+            print(invite, '\n', preparation)
+            if len(invite) > 0:
+                for user_id in invite:
+                    if user_id not in preparation:
+
+                        start_time = invite[user_id][2]['time']
+                        difference = start_time + wait
+                        if difference < date.now():
+                            """
+                            выполнить отправку сообщение об истечении времени ожидания в чат
+                            и удалить данные 2х пользователей из словаря
+                            """
+
+                            peer_id = invite[user_id][2]['peer_id']
+                            message = 'Timeout error'
+                            sender()
+                            id_1 = invite[user_id][0]
+                            id_2 = user_id
+                            del invite[id_1], invite[id_2]
+            if len(preparation) > 0:
+                for user_id in preparation:
+                    start_time = preparation[user_id]['time']
+                    difference = start_time + wait
+                    if difference < date.now():
+                        """
+                        выполнить отправку сообщение об истечении времени ожидания в чат
+                        и удалить данные 2х пользователей из словаря
+                        """
+
+                        peer_id = preparation[user_id]['peer_id']
+                        message = 'Timeout error'
+                        sender()
+                        id_1 = user_id
+                        id_2 = preparation[user_id]['id']
+                        del preparation[id_1], preparation[id_2]
+        except Exception as error:
+            print(error.__repr__())
 
 
 def dump_ius():
@@ -49,7 +104,7 @@ class Event_commands:
         if self.user_id in invite and not squad == 'rps':
             self.battle()
 
-        elif squad == 'rps':
+        elif squad == 'rps' and self.user_id in preparation:
             self.rps()
 
         else:
@@ -93,12 +148,14 @@ class Event_commands:
                 message = f'{parm_1[1]} Vs {parm_2[1]}\nПереигрываем'
                 keyboard = create_keyboard(Rock, Paper, Sciss)
                 preparation[self.user_id]['opt'] = None
+                preparation[self.user_id]['time'] = date.now()
                 preparation[id_2]['opt'] = None
+                preparation[id_2]['time'] = date.now()
                 self.messages_edit(message=message, keyboard=keyboard)
 
     def battle(self):
-        id_1, flag_1 = invite[self.user_id]
-        id_2, flag_2 = invite[id_1]
+        id_1, flag_1 = invite[self.user_id][0:2]
+        id_2, flag_2 = invite[id_1][0:2]
         print(f'{id_1}:{flag_1}\n{id_2}:{flag_2}')
         if flag_2:
             self.event_sender(event_data=json.dumps(ius))
@@ -113,8 +170,8 @@ class Event_commands:
                 } 
                 """
 
-                preparation[id_1] = {'id': id_2, 'opt': None}
-                preparation[id_2] = {'id': id_1, 'opt': None}
+                preparation[id_1] = {'id': id_2, 'opt': None, 'time': date.now(), 'peer_id': self.peer_id}
+                preparation[id_2] = {'id': id_1, 'opt': None, 'time': date.now(), 'peer_id': self.peer_id}
                 keyboard = create_keyboard(Rock, Paper, Sciss)
                 self.messages_edit(message='Тут будет продолжение', keyboard=keyboard)
             else:
@@ -169,7 +226,7 @@ class Commands:
             self.reply_date: object = date.utcfromtimestamp(reply.get('date'))
         try:
             self.reply_user = self.message.split()[1][3:12]
-        except:
+        except Exception:
             pass
 
         self.command_handler()
@@ -213,7 +270,7 @@ class Commands:
         try:
             user_object = db_sess.query(User).filter_by(user_id=self.user_id).first().user_id
             self.sender(message=f'@id{self.user_id}(USER), ты, регистрировался уже!')
-        except:
+        except Exception:
 
             user = User()
             user.user_id = self.user_id
@@ -248,23 +305,26 @@ class Commands:
         user_2 = db_sess.query(User).filter_by(user_id=self.reply_user).first()
 
         if user and user_2:
-            id_1: int = user.user_id
-            name: str = user.user_name
+            if user.user_id != user_2.user_id:
+                id_1: int = user.user_id
+                name: str = user.user_name
 
-            id_2: int = user_2.user_id
-            name_2: str = user_2.user_name
+                id_2: int = user_2.user_id
+                name_2: str = user_2.user_name
 
-            if id_1 in invite:
-                self.sender(message=f'Error: @id{id_1} is invite')
-            elif id_2 in invite:
-                self.sender(message=f'Error: @id{id_2} is invite')
+                if id_1 in invite:
+                    self.sender(message=f'Error: @id{id_1} is invited')
+                elif id_2 in invite:
+                    self.sender(message=f'Error: @id{id_2} is invited')
+                else:
+                    text = f'@id{id_1}({name_2.title()}), Вас вызывает на дуэль господин @id{id_2}({name.title()})'
+                    keyboard = create_keyboard(Accept, Deny)
+                    invite[id_1] = [id_2, False, {'time': date.now(), 'peer_id': self.peer_id}]
+                    invite[id_2] = [id_1, True, {'time': date.now(), 'peer_id': self.peer_id}]
+
+                    self.sender(message=text, keyboard=keyboard)
             else:
-                text = f'@id{id_1}({name_2.title()}), Вас вызывает на дуэль господин @id{id_2}({name.title()})'
-                keyboard = create_keyboard(Accept, Deny)
-                invite[id_1] = [id_2, False]
-                invite[id_2] = [id_1, True]
-
-                self.sender(message=text, keyboard=keyboard)
+                self.sender(message=f'Error: {user.user_id}=={user_2.user_id}')
         else:
             self.sender(message='Error')
         db_sess.close()
@@ -309,7 +369,7 @@ if __name__ == '__main__':
 
     token = setting['token']
     group_id = setting['group_id']
-
+    Thread(target=checker_time_mge).start()
     bot = Bot(token, group_id)
     bot.runner()
     Commands.create_keyboard()
