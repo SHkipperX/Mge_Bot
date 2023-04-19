@@ -11,7 +11,7 @@ from datetime import datetime as date
 import json
 # Другое_2
 from orm_connector import db_session
-from orm_connector.__all_models import User
+from orm_connector.__all_models import User, User_Heros
 from functions import create_keyboard, decoding_orm, Rock_Paper_Scissors
 from button import BUTTONS_SETTINGS as bs
 from Mode_text import *
@@ -212,7 +212,6 @@ class Commands:
         db_sess = db_session.create_session()
         try:
             user_object = db_sess.query(User).filter_by(user_id=self.user_id).first().user_id
-            db_sess.close()
             self.sender(message=f'@id{self.user_id}(USER), ты, регистрировался уже!')
         except:
 
@@ -221,8 +220,13 @@ class Commands:
             user.user_name = 'участник'
             db_sess.add(user)
             db_sess.commit()
-
+            hero = User_Heros(user_key=user.id)
+            db_sess.add(hero)
+            db_sess.commit()
             self.sender(message=f'@id{self.user_id}(USER) Зарегестрирован на участие в МГЕ схватках!')
+
+        finally:
+            db_sess.close()
 
     def sender(self, message: Optional[str] = None, keyboard: Optional[object] = None,
                attachments: Optional[object] = None) -> None:
