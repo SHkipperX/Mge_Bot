@@ -10,17 +10,20 @@ GREEN = color.POSITIVE  # Зелёная
 """
 KeyBoardDoc --> https://dev.vk.com/api/bots/development/keyboard
 """
-a = {'label': 'Label', 'color': color, 'payload': {'type': 'Type'}}
+a = {'label': '___', 'color': None, 'payload': {'type': '___'}}
 
 BUTTONS_SETTINGS: dict[str, dict] = {
-    'test': {'label': 'Push', 'color': RED, 'payload': {"type": "show_snackbar", "text": "Биг_Пиг"}},
+    'accept': {'label': 'принять', 'color': GREEN, 'payload': {'type': 'accept', 'ids': None}},
+    'deny': {'label': 'отказать', 'color': RED, 'payload': {'type': 'deny', 'ids': None}},
 
-    'rock': {'label': 'Камень', 'color': RED, 'payload': {'type': 'rock', 'squad': 'rps'}},
-    'paper': {'label': 'Бумага', 'color': WHITE, 'payload': {'type': 'paper', 'squad': 'rps'}},
-    'scissors': {'label': 'Ножницы', 'color': GREEN, 'payload': {'type': 'scissors', 'squad': 'rps'}},
+    'rock': {'label': 'Камень', 'color': RED, 'payload': {'type': 'rock', 'squad': 'rps', 'ids': None}},
+    'paper': {'label': 'Бумага', 'color': WHITE, 'payload': {'type': 'paper', 'squad': 'rps', 'ids': None}},
+    'scissors': {'label': 'Ножницы', 'color': GREEN, 'payload': {'type': 'scissors', 'squad': 'rps', 'ids': None}},
 
-    'accept': {'label': 'принять', 'color': GREEN, 'payload': {'type': 'accept'}},
-    'deny': {'label': 'отказать', 'color': RED, 'payload': {'type': 'deny'}}
+    'body_shot': {'label': 'Тело', 'color': GREEN, 'payload': {'type': 'bd_sh', 'squad': 'game', 'ids': None}},
+    'head_shot': {'label': 'Голова', 'color': RED, 'payload': {'type': 'hs_sh', 'squad': 'game', 'ids': None}},
+    'move_R': {'label': 'Вправо', 'color': BLUE, 'payload': {'type': 'move_r', 'squad': 'game', 'ids': None}},
+    'move_L': {'label': 'Влево', 'color': BLUE, 'payload': {'type': 'move_l', 'squad': 'game', 'ids': None}}
 }
 
 sp_unccor = ['1', '2', '3', '4', '5', '6', '7', '8']

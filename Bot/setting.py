@@ -1,3 +1,6 @@
+import json
+import pprint
+
 setting = {
     'token': 'vk1.a.hI1q03fpbvvPNnai_zoiv75AykKS2cjusMeB9HYunyvz7tmLnP5v7MfQrZcE5K9CiI6cCbIlLn0K_5019ySGEhJfD_lq'
              'f0qITVlPOC1fPZUEU6AquMUDy0ZrgGHZDm0pPyc_k4cKekFBhy4lDMps71vHyw28gtUVi3Dk9V5xK07QAkRZkgRNbsU8BcpJ8r3g'

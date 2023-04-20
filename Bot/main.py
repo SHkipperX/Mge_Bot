@@ -24,66 +24,64 @@ from button import ius, cus, sp_unccor, sp_corr
 # VK нужен для обращения к методам API через код
 VK = None
 Upload = None
-invite: dict[int, list[int, bool]] = dict()
+invite: dict[int, dict] = dict()
 preparation: dict = dict()
+game: dict[int, dict] = dict()
 
 Accept = bs.get('accept')
 Deny = bs.get('deny')
 Rock, Paper, Sciss = bs['rock'], bs['paper'], bs['scissors']
 
-"""
-Делается...
-"""
-def checker_time_mge():
-    def sender() -> None:
+
+class Checker_time:
+    """
+    Doc
+    """
+
+    def __init__(self):
+        self.wait = delta(seconds=5)
+
+    def delete(self, x: dict, name: str):
+        start_time = x['time']
+        peer_id = x['peer_id']
+        id_1 = x['id']
+
+        if start_time + self.wait < date.now():
+            self.sender(peer_id=peer_id, message='Error Time')
+            if name == 'invite':
+                id_2 = invite[id_1]['id']
+                del invite[id_1], invite[id_2]
+            elif name == 'preparation':
+                id_2 = preparation[id_1]['id']
+                del preparation[id_1], preparation[id_2]
+            elif name == 'game':
+                pass
+
+    def sender(self, peer_id: int, message: str) -> None:
         post = {'peer_id': peer_id, 'chat_id': 100000000, 'message': message,
                 'random_id': get_random_id()}
         VK.messages.send(**post)
 
-    wait = delta(seconds=5, minutes=0)
-    while True:
-        time.sleep(1)
-        try:
-            print(invite, '\n', preparation)
-            if len(invite) > 0:
-                for user_id in invite:
-                    if user_id not in preparation:
+    def pepe(self):
 
-                        start_time = invite[user_id][2]['time']
-                        difference = start_time + wait
-                        if difference < date.now():
-                            """
-                            выполнить отправку сообщение об истечении времени ожидания в чат
-                            и удалить данные 2х пользователей из словаря
-                            """
+        while True:
+            time.sleep(1)
+            try:
+                if invite:
+                    for data in invite:
+                        self.delete(invite[data], 'invite')
+                if preparation:
+                    for data in preparation:
+                        self.delete(preparation[data], 'preparation')
 
-                            peer_id = invite[user_id][2]['peer_id']
-                            message = 'Timeout error'
-                            sender()
-                            id_1 = invite[user_id][0]
-                            id_2 = user_id
-                            del invite[id_1], invite[id_2]
-            if len(preparation) > 0:
-                for user_id in preparation:
-                    start_time = preparation[user_id]['time']
-                    difference = start_time + wait
-                    if difference < date.now():
-                        """
-                        выполнить отправку сообщение об истечении времени ожидания в чат
-                        и удалить данные 2х пользователей из словаря
-                        """
-
-                        peer_id = preparation[user_id]['peer_id']
-                        message = 'Timeout error'
-                        sender()
-                        id_1 = user_id
-                        id_2 = preparation[user_id]['id']
-                        del preparation[id_1], preparation[id_2]
-        except Exception as error:
-            print(error.__repr__())
+            except Exception as error:
+                print(error.__repr__())
 
 
-def dump_ius():
+def dump() -> json:
+    """
+    :return:
+    """
     ius['text'] = choice(sp_unccor)
     return json.dumps(ius)
 
@@ -99,27 +97,27 @@ class Event_commands:
         self.peer_id: int = event_dict['peer_id']
         self.con_mes_id: int = event_dict['conversation_message_id']
         self.payload: dict = event_dict['payload']
-        squad = self.payload.get('squad')
+        squad: str = self.payload.get('squad')
+        holders_button: list = self.payload['ids']
+        if self.user_id in holders_button:
+            if self.user_id in invite and not squad == 'rps':
+                self.toss()
 
-        if self.user_id in invite and not squad == 'rps':
-            self.battle()
-
-        elif squad == 'rps' and self.user_id in preparation:
-            self.rps()
-
+            elif squad == 'rps' and self.user_id in preparation:
+                self.rps()
         else:
-            self.event_sender(dump_ius())
+            self.event_sender(dump())
 
-    def rps(self):
+    def rps(self) -> None:
         """Rock-Paper-Scissors
             Выбор победителя
             """
+        id_2 = preparation[self.user_id]['id']
         if not preparation[self.user_id]['opt']:
             preparation[self.user_id]['opt'] = self.payload['type']
-            self.event_sender(None)
-
-        id_2 = preparation[self.user_id]['id']
-        if preparation[id_2]['opt'] and preparation[self.user_id]['opt']:
+        if preparation[self.user_id]['opt']:
+            self.event_sender(dump())
+        elif preparation[id_2]['opt'] and preparation[self.user_id]['opt']:
             db_sess = db_session.create_session()
 
             parm_1 = [self.user_id, preparation[self.user_id]['opt']]
@@ -153,27 +151,21 @@ class Event_commands:
                 preparation[id_2]['time'] = date.now()
                 self.messages_edit(message=message, keyboard=keyboard)
 
-    def battle(self):
-        id_1, flag_1 = invite[self.user_id][0:2]
-        id_2, flag_2 = invite[id_1][0:2]
+    def toss(self) -> None:
+        id_1, flag_1 = invite[self.user_id]['id'], invite[self.user_id]['bool']
+        id_2, flag_2 = invite[id_1]['id'], invite[id_1]['bool']
         print(f'{id_1}:{flag_1}\n{id_2}:{flag_2}')
         if flag_2:
             self.event_sender(event_data=json.dumps(ius))
         else:
             if self.payload['type'] == 'accept':
-                """
-                Значения в словаре хранятся следующим образом:
-                opt - это выбор предмета из Камень, Ножницы, Бумага
-                {
-                user_1: {'id': user_2, 'opt': None}, #user_1 привязан к user_2
-                user_2: {'id': user_1, 'opt': None}  #user_2 привязан к user_1
-                } 
-                """
+                """opt - одно из [камень, ножницы, бумага]"""
 
                 preparation[id_1] = {'id': id_2, 'opt': None, 'time': date.now(), 'peer_id': self.peer_id}
                 preparation[id_2] = {'id': id_1, 'opt': None, 'time': date.now(), 'peer_id': self.peer_id}
                 keyboard = create_keyboard(Rock, Paper, Sciss)
                 self.messages_edit(message='Тут будет продолжение', keyboard=keyboard)
+
             else:
                 del invite[id_1], invite[id_2]
 
@@ -181,8 +173,9 @@ class Event_commands:
 
     def event_sender(self, event_data: str) -> None:
         """
+        //Эфемерное сообщение
         Подробнее смотреть док-ю -> https://dev.vk.com/method/messages.sendMessageEventAnswer
-        Эфемерное сообщение
+
         :param event_data: (dict) Объект действия, которое должно произойти после нажатия на кнопку
         :return:
         """
@@ -318,9 +311,12 @@ class Commands:
                     self.sender(message=f'Error: @id{id_2} is invited')
                 else:
                     text = f'@id{id_1}({name_2.title()}), Вас вызывает на дуэль господин @id{id_2}({name.title()})'
+                    Accept['payload']['ids'] = [id_1, id_2]
+                    Deny['payload']['ids'] = [id_1, id_2]
+                    print(Accept, Deny)
                     keyboard = create_keyboard(Accept, Deny)
-                    invite[id_1] = [id_2, False, {'time': date.now(), 'peer_id': self.peer_id}]
-                    invite[id_2] = [id_1, True, {'time': date.now(), 'peer_id': self.peer_id}]
+                    invite[id_1] = {'id': id_2, 'bool': False, 'time': date.now(), 'peer_id': self.peer_id}
+                    invite[id_2] = {'id': id_1, 'bool': True, 'time': date.now(), 'peer_id': self.peer_id}
 
                     self.sender(message=text, keyboard=keyboard)
             else:
@@ -369,7 +365,7 @@ if __name__ == '__main__':
 
     token = setting['token']
     group_id = setting['group_id']
-    Thread(target=checker_time_mge).start()
+    Thread(target=Checker_time().pepe).start()
     bot = Bot(token, group_id)
     bot.runner()
     Commands.create_keyboard()
