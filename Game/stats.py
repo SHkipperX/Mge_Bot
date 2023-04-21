@@ -21,6 +21,9 @@ class CurDamage:
     def damage(self) -> int:
         return self._cur_damage
 
+    def __str__(self) -> str:
+        return str(self.damage)
+
 
 class BaseStat:
     _value: int
@@ -73,6 +76,9 @@ class Splash:
         """
         return round(triangular(*self._splash_range), 1)
 
+    def get_splash(self) -> Tuple[float, float]:
+        return self._splash_range
+
 
 class Damage(BaseStat):
     def __init__(self, damage: int = 0, percent: Union[int | float] = 0, max_level: int = None):
@@ -114,10 +120,14 @@ class Accuracy(BaseStat):
         return self._accuracy_head
 
     def chance_body(self) -> bool:
-        return random() <= self._accuracy_body
+        return random() <= self._accuracy_body / 100
 
     def chance_head(self) -> bool:
-        return random() <= self._accuracy_head
+        return random() <= self._accuracy_head / 100
+
+    @accuracy_head.setter
+    def accuracy_head(self, value):
+        self._accuracy_head = value
 
 
 class Health(BaseStat):

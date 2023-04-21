@@ -1,6 +1,6 @@
 from typing import Tuple, Union, Optional
 
-from stats import Damage, Accuracy, Health, Splash, CurDamage
+from stats import *
 
 BODY: str = 'body'
 HEAD: str = 'head'
@@ -21,9 +21,9 @@ class BaseCharacter:
                  percent_accuracy: Union[int, float] = 0,
                  percent_health: Union[int, float] = 0):
         self.damage = Damage(damage_value, percent_damage, max_level_damage)
-        self.accuracy = Accuracy(accuracy_value, percent_accuracy, max_level_accuracy)
+        self.accuracy = Accuracy(accuracy_body=accuracy_value, percent=percent_accuracy, max_level=max_level_accuracy)
         self.health = Health(health_value, percent_health, max_level_health)
-        self.splash = Splash(*splash_damage_range) if splash_damage_range else None
+        self._splash = Splash(*splash_damage_range) if splash_damage_range else None
 
         self._current_damage = CurDamage()
 
@@ -35,9 +35,20 @@ class BaseCharacter:
         if self.accuracy.chance_body():
             self.cur_damage.add_damage(self.damage.damage)
 
-    def level_up(self, count_level: int = 1):
+    @property
+    def splash(self) -> Tuple[float, float]:
+        return self._splash.get_splash()
+
+    def hit_splash(self):
+        self.cur_damage.add_damage(int(self.damage.damage * self._splash.splash()))
+
+    def level_up_damage(self, count_level: int = 1):
         self.damage.level_up(count_level)
+
+    def level_up_accuracy(self, count_level: int = 1):
         self.accuracy.level_up(count_level)
+
+    def level_up_health(self, count_level: int = 1):
         self.health.level_up(count_level)
 
     def set_cur_damage(self, damage: int):
@@ -49,7 +60,7 @@ class BaseCharacter:
     def sub_cur_damage(self, damage: int):
         self._current_damage -= damage
 
-    def get_damage(self) -> int:
+    def get_and_nullify_damage(self) -> int:
         res = self.cur_damage.damage
         self.cur_damage.set_damage()
         return res
@@ -79,7 +90,17 @@ class Sniper(BaseCharacter):
             health_value=80,
             percent_health=8
         )
-        super().__init__()
+        self.accuracy.accuracy_head = 12
+
+    def hit(self, target: str = 'body'):
+        """
+        :param target: Цель: body; head
+        """
+        if target == 'body':
+            BaseCharacter.hit(self)
+        elif target == 'head':
+            if self.accuracy.chance_head():
+                self.cur_damage.add_damage(self.damage.damage * 2)
 
 
 class Soldier(BaseCharacter):
