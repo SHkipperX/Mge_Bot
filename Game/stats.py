@@ -1,7 +1,25 @@
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, Tuple, Union
 
-from random import random
+from random import random, triangular
+
+
+class CurDamage:
+    def __init__(self, damage: Optional[int] = 0):
+        self._cur_damage = damage
+
+    def set_damage(self, damage: Optional[int] = 0):
+        self._cur_damage = damage
+
+    def add_damage(self, damage: int):
+        self._cur_damage += damage
+
+    def sub_damage(self, damage: int):
+        self._cur_damage -= damage
+
+    @property
+    def damage(self) -> int:
+        return self._cur_damage
 
 
 class BaseStat:
@@ -44,8 +62,20 @@ class BaseStat:
         return self._value
 
 
+class Splash:
+    def __init__(self,
+                 splash_range: Tuple[float, float]):
+        self._splash_range = splash_range
+
+    def splash(self) -> float:
+        """
+        Returns a random floating point number from the range specified when the object was created
+        """
+        return round(triangular(*self._splash_range), 1)
+
+
 class Damage(BaseStat):
-    def __init__(self, damage: Optional[int] = 0, percent: Optional[int | float] = 0, max_level: Optional[int] = None):
+    def __init__(self, damage: int = 0, percent: Union[int | float] = 0, max_level: int = None):
         super(Damage, self).__init__(value=damage, percent=percent, max_level=max_level)
 
     @property
@@ -54,8 +84,8 @@ class Damage(BaseStat):
 
 
 class Accuracy(BaseStat):
-    def __init__(self, accuracy_body: Optional[int] = 0, accuracy_head: Optional[int] = 0,
-                 percent: Optional[int | float] = 0, max_level: Optional[int] = None):
+    def __init__(self, accuracy_body: int = 0, accuracy_head: Optional[int] = 0,
+                 percent: Union[int | float] = 0, max_level: int = None):
         super(Accuracy, self).__init__(value=0, percent=percent, max_level=max_level)
         self._accuracy_head = accuracy_head
         self._accuracy_body = accuracy_body
@@ -83,10 +113,10 @@ class Accuracy(BaseStat):
     def accuracy_head(self) -> int:
         return self._accuracy_head
 
-    def get_chance_body(self) -> bool:
+    def chance_body(self) -> bool:
         return random() <= self._accuracy_body
 
-    def get_chance_head(self) -> bool:
+    def chance_head(self) -> bool:
         return random() <= self._accuracy_head
 
 
