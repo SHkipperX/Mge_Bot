@@ -27,11 +27,12 @@ class CurDamage:
 
 class BaseStat:
     _value: int
-    _percent: int | float
+    _percent: Union[int, float]
     _level: int = 1
     _max_level: int = None
 
-    def __init__(self, value: Optional[int] = 0, percent: Optional[int | float] = 0, max_level: Optional[int] = None):
+    def __init__(self, value: Optional[int] = 0, percent: Optional[Union[int, float]] = 0,
+                 max_level: Optional[int] = None):
         self._start_value = value
         self._value = value
         self._percent = percent
@@ -53,7 +54,7 @@ class BaseStat:
             print('maximum level')
 
     @property
-    def percent(self) -> int | float:
+    def percent(self) -> Union[int, float]:
         return self._percent
 
     @property
@@ -81,7 +82,7 @@ class Splash:
 
 
 class Damage(BaseStat):
-    def __init__(self, damage: int = 0, percent: Union[int | float] = 0, max_level: int = None):
+    def __init__(self, damage: int = 0, percent: Union[int, float] = 0, max_level: int = None):
         super(Damage, self).__init__(value=damage, percent=percent, max_level=max_level)
 
     @property
@@ -91,7 +92,7 @@ class Damage(BaseStat):
 
 class Accuracy(BaseStat):
     def __init__(self, accuracy_body: int = 0, accuracy_head: Optional[int] = 0,
-                 percent: Union[int | float] = 0, max_level: int = None):
+                 percent: Union[int, float] = 0, max_level: int = None):
         super(Accuracy, self).__init__(value=0, percent=percent, max_level=max_level)
         self._accuracy_head = accuracy_head
         self._accuracy_body = accuracy_body
@@ -131,7 +132,8 @@ class Accuracy(BaseStat):
 
 
 class Health(BaseStat):
-    def __init__(self, health: Optional[int] = 0, percent: Optional[int | float] = 0, max_level: Optional[int] = None):
+    def __init__(self, health: Optional[int] = 0, percent: Optional[Union[int, float]] = 0,
+                 max_level: Optional[int] = None):
         super(Health, self).__init__(value=health, percent=percent, max_level=max_level)
 
     @property

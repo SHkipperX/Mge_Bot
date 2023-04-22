@@ -1,9 +1,7 @@
-from typing import Tuple, Union, Optional
+from typing import Optional, Tuple, Union
 
-from stats import *
-
-BODY: str = 'body'
-HEAD: str = 'head'
+from stats import Damage, Accuracy, Health, Splash, CurDamage
+from constants import TARGET_HEAD, TARGET_BODY
 
 
 class BaseCharacter:
@@ -92,13 +90,13 @@ class Sniper(BaseCharacter):
         )
         self.accuracy.accuracy_head = 12
 
-    def hit(self, target: str = 'body'):
+    def hit(self, target: str = TARGET_BODY):
         """
         :param target: Цель: body; head
         """
-        if target == 'body':
+        if target == TARGET_BODY:
             BaseCharacter.hit(self)
-        elif target == 'head':
+        elif target == TARGET_HEAD:
             if self.accuracy.chance_head():
                 self.cur_damage.add_damage(self.damage.damage * 2)
 
