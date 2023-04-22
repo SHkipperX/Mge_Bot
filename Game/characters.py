@@ -21,7 +21,7 @@ class BaseCharacter:
         self.damage = Damage(damage_value, percent_damage, max_level_damage)
         self.accuracy = Accuracy(accuracy_body=accuracy_value, percent=percent_accuracy, max_level=max_level_accuracy)
         self.health = Health(health_value, percent_health, max_level_health)
-        self._splash = Splash(*splash_damage_range) if splash_damage_range else None
+        self._splash = Splash(splash_damage_range) if splash_damage_range else None
 
         self._current_damage = CurDamage()
 

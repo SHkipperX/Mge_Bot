@@ -41,7 +41,7 @@ class BaseStat:
 
     def level_up(self, count_level: int = 1):
         if count_level <= 0:
-            raise ValueError('count_level must not be zero')
+            return
 
         self._level += count_level
 
@@ -51,7 +51,7 @@ class BaseStat:
         if self._max_level and self._level > self._max_level:
             for _ in range(self._level - self._max_level):
                 self._value = self._value - int(self._start_value / 100 * self._percent)
-            print('maximum level')
+            self._level = self._max_level
 
     @property
     def percent(self) -> Union[int, float]:
@@ -99,7 +99,7 @@ class Accuracy(BaseStat):
 
     def level_up(self, count_level: int = 1):
         if count_level <= 0:
-            raise ValueError('count_level must not be zero')
+            return
 
         self._level += count_level
 
