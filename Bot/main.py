@@ -27,13 +27,23 @@ invite: dict[int, dict] = dict()
 preparation: dict = dict()
 pick_character: dict = dict()
 game: dict[int, dict] = dict()
+Lvl_up: dict = dict()
 general_list = list()
+
+TEST = None
 
 Accept = bs.get('accept')
 Deny = bs.get('deny')
 Rock, Paper, Sciss = bs['rock'], bs['paper'], bs['scissors']
 Sniper, Solder, Demoman = bs['sniper'], bs['solder'], bs['demoman']
 Body_Sh, Head_Sh, Move_R, Move_L = bs['body_shot'], bs['head_shot'], bs['move_R'], bs['move_L']
+Units = bs['units']
+menu_set = bs['menu_setting']
+Stat = menu_set['stat']
+Sniper_up = menu_set['units']['sniper']
+Solder_up = menu_set['units']['solder']
+Demoman_up = menu_set['units']['demoman']
+Damage, Health, Accuracy = menu_set['lvl_up']['damage'], menu_set['lvl_up']['health'], menu_set['lvl_up']['accuracy']
 
 
 def dump(param: str) -> json:
@@ -136,6 +146,9 @@ class Event_commands:
 
             elif self.user_id in pick_character:
                 self.character_selection()
+        elif squad == 'menu' and self.user_id in self.holders_button:
+            Menu(type_button=self.payload['type'], user_id=self.user_id, conversation_message_id=self.con_mes_id,
+                 peer_id=self.peer_id)
         else:
             self.event_sender(dump(param='notU'))
 
@@ -256,7 +269,9 @@ class Event_commands:
                 if unit == 'sniper':
                     Head_Sh['payload']['step'], Head_Sh['payload']['ids'] = step, [self.user_id, enemy_id]
                 Body_Sh['payload']['step'], Move_R['payload']['step'], Move_L['payload']['step'] = step, step, step
-                Body_Sh['payload']['ids'], Move_R['payload']['ids'], Move_L['payload']['ids'] = [self.user_id, enemy_id], [self.user_id, enemy_id], [
+                Body_Sh['payload']['ids'], Move_R['payload']['ids'], Move_L['payload']['ids'] = [self.user_id,
+                                                                                                 enemy_id], [
+                    self.user_id, enemy_id], [
                     self.user_id, enemy_id]
                 if unit == 'sniper':
                     keyboard = create_keyboard(Move_L, Head_Sh, Body_Sh, Move_R)
@@ -267,7 +282,9 @@ class Event_commands:
                 if enemy_unit == 'sniper':
                     Head_Sh['payload']['step'], Head_Sh['payload']['ids'] = step, [self.user_id, enemy_id]
                 Body_Sh['payload']['step'], Move_R['payload']['step'], Move_L['payload']['step'] = step, step, step
-                Body_Sh['payload']['ids'], Move_R['payload']['ids'], Move_L['payload']['ids'] = [self.user_id, enemy_id], [self.user_id, enemy_id], [
+                Body_Sh['payload']['ids'], Move_R['payload']['ids'], Move_L['payload']['ids'] = [self.user_id,
+                                                                                                 enemy_id], [
+                    self.user_id, enemy_id], [
                     self.user_id, enemy_id]
                 if enemy_unit == 'sniper':
                     keyboard = create_keyboard(Move_L, Head_Sh, Body_Sh, Move_R)
@@ -297,10 +314,110 @@ class Event_commands:
         :param keyboard: клавиатура inline/no-inline
         :return:
         """
-        post = {'peer_id': self.peer_id, 'user_id': self.user_id, 'message': message, 'attachment': attachment,
+        post = {'peer_id': self.peer_id, 'message': message, 'attachment': attachment,
                 'keyboard': keyboard,
                 'conversation_message_id': self.con_mes_id}
         VK.messages.edit(**post)
+
+
+class Menu:
+    def __init__(self, type_button: str, user_id: int, conversation_message_id: int, peer_id: int):
+        self.type_button = type_button
+        self.user_id = user_id
+        self.con_mes_id = conversation_message_id
+        self.peer_id = peer_id
+
+        if type_button == 'persons':
+            self.person()
+        elif type_button == 'stat':
+            pass
+        elif type_button == 'sniper_up':
+            pass
+        elif type_button == 'solder_up':
+            pass
+        elif type_button == 'demoman_up':
+            pass
+        elif type_button == 'damage':
+            pass
+        elif type_button == 'health':
+            pass
+        elif type_button == 'accuracy':
+            pass
+        elif type_button == 'back':
+            pass
+    def sn_person_lvl(self):
+        pass
+
+    def person(self):
+        """
+        Открываем пользователю его персонажей
+        """
+        Sniper_up['payload']['ids'], Solder_up['payload']['ids'], Demoman_up['payload']['ids'] = [self.user_id], [
+            self.user_id], [self.user_id]
+        keyboard = create_keyboard(Sniper_up, Solder_up, Demoman_up)
+
+        db_sess = db_session.create_session()
+        key_id = db_sess.query(User).filter_by(user_id=self.user_id).first().id
+        Char = db_sess.query(User_Heros).filter_by(user_key=key_id).first()
+        message = f'Суммарный уровень:\n' \
+                  f'●Снайпер {Char.sn_damage + Char.sn_accuracy + Char.sn_health}lvl\n' \
+                  f'🚀Солдат {Char.so_damage + Char.so_accuracy + Char.so_health}lvl\n' \
+                  f'🔥Подрывник {Char.de_damage + Char.de_accuracy + Char.de_health}lvl'
+
+        db_sess.close()
+        self.messages_edit(message=message, keyboard=keyboard)
+
+    def messages_edit(self, message: Optional[str], attachment: Optional[object] = None,
+                      keyboard: Optional[VkKeyboard] = None) -> None:
+        """
+        Редактирование сообщения
+        :param message: текст не более 1000 символов
+        :param attachment: фото/аудио фаил
+        :param keyboard: клавиатура inline/no-inline
+        :return:
+        """
+        post = {'peer_id': self.peer_id, 'message': message, 'attachment': attachment,
+                'keyboard': keyboard,
+                'conversation_message_id': self.con_mes_id}
+        VK.messages.edit(**post)
+
+
+class Bot:
+    """
+    DOC
+    Тело бота
+    """
+
+    def __init__(self, Token: str, Page_id: str, App_id=6441755):
+        global VK, Upload
+        self.Token = Token
+        self.Page_id = Page_id
+
+        self.session = VkApi(token=Token, app_id=App_id)
+        self.VkBotLongPoll = VkBotLongPoll(vk=self.session, group_id=Page_id)
+        VK = self.session.get_api()
+        Upload = VkUpload(self.session)
+        db_session.global_init(db_file=f'data/{Page_id}.db')
+
+    def runner(self) -> NoReturn:
+        global TEST
+        """
+        :типа докстринг: ахахахаха
+        """
+        while True:
+            try:
+                for event in self.VkBotLongPoll.listen():
+                    # print(T_RED, M_FAT, event, M_0)
+                    # print(event.message)
+                    if event.type == VkBotEventType.MESSAGE_EVENT:
+                        Event_commands(event_dict=event.object)
+                    elif event.type == VkBotEventType.MESSAGE_NEW and event.from_chat:
+                        Commands(event_dict=event.message)
+
+
+
+            except Exception as error:
+                print(T_RED, M_FAT, error, '\n', format_exc(), M_0)
 
 
 class Commands:
@@ -350,6 +467,9 @@ class Commands:
             """Смена ника"""
             self.new_nickname()
 
+        elif self.message == 'menu':
+            self.create_menu()
+
     def new_nickname(self) -> None:
         """
         Смена имени в database
@@ -386,6 +506,17 @@ class Commands:
 
         finally:
             db_sess.close()
+
+    def create_menu(self):
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).filter_by(user_id=self.user_id).scalar()
+        print(user)
+        if user:
+            Units['payload']['ids'], Stat['payload']['ids'] = [self.user_id], [self.user_id]
+            keyboard = create_keyboard(Units, Stat)
+            message = f'@id{self.user_id}(Меню)'
+            self.sender(message=message, keyboard=keyboard)
+        db_sess.close()
 
     def sender(self, message: Optional[str] = None, keyboard: Optional[object] = None,
                attachments: Optional[object] = None) -> None:
@@ -439,40 +570,6 @@ class Commands:
             name = f'@id{self.reply_user}'
             self.sender(message=speech['ntrg'][0].replace('@id', name))
         db_sess.close()
-
-
-class Bot:
-    """
-    DOC
-    Тело бота
-    """
-
-    def __init__(self, Token: str, Page_id: str, App_id=6441755):
-        global VK, Upload
-        self.Token = Token
-        self.Page_id = Page_id
-
-        self.session = VkApi(token=Token, app_id=App_id)
-        self.VkBotLongPoll = VkBotLongPoll(vk=self.session, group_id=Page_id)
-        VK = self.session.get_api()
-        Upload = VkUpload(self.session)
-        db_session.global_init(db_file=f'data/{Page_id}.db')
-
-    def runner(self) -> NoReturn:
-        """
-        :типа докстринг: ахахахаха
-        """
-        while True:
-            try:
-                for event in self.VkBotLongPoll.listen():
-                    # print(T_RED, M_FAT, event, M_0)
-                    # print(event.message)
-                    if event.type == VkBotEventType.MESSAGE_NEW and event.from_chat:
-                        Commands(event_dict=event.message)
-                    elif event.type == VkBotEventType.MESSAGE_EVENT:
-                        Event_commands(event_dict=event.object)
-            except Exception as error:
-                print(T_RED, M_FAT, error, '\n', format_exc(), M_0)
 
 
 if __name__ == '__main__':

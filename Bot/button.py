@@ -31,7 +31,25 @@ BUTTONS_SETTINGS: dict[str, dict] = {
     'move_R': {'label': 'Вправо', 'color': BLUE,
                'payload': {'type': 'move_r', 'squad': 'game', 'step': False, 'ids': []}},
     'move_L': {'label': 'Влево', 'color': BLUE,
-               'payload': {'type': 'move_l', 'squad': 'game', 'step': False, 'ids': []}}
+               'payload': {'type': 'move_l', 'squad': 'game', 'step': False, 'ids': []}},
+    'units': {'label': 'Персонажи', 'color': BLUE,
+               'payload': {'type': 'persons', 'squad': 'menu'}},
+    'back': {'label': 'назад', 'color': BLUE,
+               'payload': {'type': 'back', 'squad': 'menu'}},
+
+
+    'menu_setting': {'stat': {'label': 'Статистика', 'color': WHITE, 'payload': {'type': 'stat', 'squad': 'menu', 'ids': []}},
+
+                     'units': {'sniper': {'label': 'Снайпер', 'color': RED,
+                                          'payload': {'type': 'sniper_up', 'squad': 'menu', 'ids': []}},
+                               'solder': {'label': 'Солдат', 'color': BLUE,
+                                          'payload': {'type': 'solder_up', 'squad': 'menu', 'ids': []}},
+                               'demoman': {'label': 'Подрывник', 'color': GREEN,
+                                           'payload': {'type': 'demoman_up', 'squad': 'menu', 'ids': []}}},
+
+                     'lvl_up': {'damage': {'label': 'Урон', 'color': RED, 'payload': {'type': 'damage', 'squad': 'menu', 'ids': []}},
+                                'health': {'label': 'Здоровье', 'color': GREEN, 'payload': {'type': 'health', 'squad': 'menu', 'ids': []}},
+                                'accuracy': {'label': 'Точность', 'color': WHITE, 'payload': {'type': 'accuracy', 'squad': 'menu', 'ids': []}}}}
 }
 
 sp_unccor = ['1', '2', '3', '4', '5', '6', '7', '8']

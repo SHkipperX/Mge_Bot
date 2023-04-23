@@ -7,14 +7,17 @@ def decoding_orm(user_object: object, character: str) -> dict:
     key = 'sn' if character == 'sniper' else 'so' if character == 'solder' else 'de'
     user_object = user_object.__dict__
     user_data = dict(sniper={}, solder={}, demoman={})
+
     for atr in user_object:
         if key in atr:
             if 'damage' in atr:
                 user_data[character]['d_lvl'] = user_object[atr]
-            if 'health' in atr:
+            elif 'health' in atr:
                 user_data[character]['h_lvl'] = user_object[atr]
-            if 'accuracy' in atr:
+            elif 'accuracy' in atr:
                 user_data[character]['a_lvl'] = user_object[atr]
+
+
     return user_data
 
 
