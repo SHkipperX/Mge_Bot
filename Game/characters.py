@@ -1,7 +1,7 @@
 from typing import Optional, Tuple, Union
 
 from stats import Damage, Accuracy, Health, Splash, CurDamage
-from constants import TARGET_HEAD, TARGET_BODY
+from constants import TARGET_HEAD, TARGET_BODY, SNIPER_STATS, SNIPER_HEAD_ACCURACY, SOLDIER_STATS, DEMOMAN_STATS
 
 
 class BaseCharacter:
@@ -25,17 +25,9 @@ class BaseCharacter:
 
         self._current_damage = CurDamage()
 
-    @property
-    def cur_damage(self) -> CurDamage:
-        return self._current_damage
-
-    def hit(self):
+    def hit(self, *args):
         if self.accuracy.chance_body():
             self.cur_damage.add_damage(self.damage.damage)
-
-    @property
-    def splash(self) -> Tuple[float, float]:
-        return self._splash.get_splash()
 
     def hit_splash(self):
         self.cur_damage.add_damage(int(self.damage.damage * self._splash.splash()))
@@ -63,6 +55,17 @@ class BaseCharacter:
         self.cur_damage.set_damage()
         return res
 
+    def chance_body(self) -> bool:
+        return self.accuracy.chance_body()
+
+    @property
+    def cur_damage(self) -> CurDamage:
+        return self._current_damage
+
+    @property
+    def splash(self) -> Tuple[float, float]:
+        return self._splash.get_splash()
+
     @property
     def level_damage(self) -> int:
         return self.damage.level
@@ -78,17 +81,8 @@ class BaseCharacter:
 
 class Sniper(BaseCharacter):
     def __init__(self):
-        super(Sniper, self).__init__(
-            damage_value=50,
-            percent_damage=10,
-
-            accuracy_value=40,
-            percent_accuracy=12,
-
-            health_value=80,
-            percent_health=8
-        )
-        self.accuracy.accuracy_head = 12
+        super(Sniper, self).__init__(**SNIPER_STATS)
+        self.accuracy.accuracy_head = SNIPER_HEAD_ACCURACY
 
     def hit(self, target: str = TARGET_BODY):
         """
@@ -103,29 +97,9 @@ class Sniper(BaseCharacter):
 
 class Soldier(BaseCharacter):
     def __init__(self):
-        super(Soldier, self).__init__(
-            damage_value=80,
-            splash_damage_range=(.2, .8),
-            percent_damage=7.5,
-
-            accuracy_value=30,
-            percent_accuracy=6,
-
-            health_value=130,
-            percent_health=12
-        )
+        super(Soldier, self).__init__(**SOLDIER_STATS)
 
 
 class Demoman(BaseCharacter):
     def __init__(self):
-        super(Demoman, self).__init__(
-            damage_value=70,
-            splash_damage_range=(.1, .5),
-            percent_damage=10,
-
-            accuracy_value=35,
-            percent_accuracy=8,
-
-            health_value=100,
-            percent_health=15
-        )
+        super(Demoman, self).__init__(**DEMOMAN_STATS)
