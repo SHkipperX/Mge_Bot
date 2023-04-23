@@ -4,6 +4,25 @@ from typing import Optional, Tuple, Union
 from random import random, triangular
 
 
+class Side:
+    def __init__(self, side: str = None):
+        self._side: str = side
+
+    @property
+    def side(self) -> str:
+        return self._side
+
+    @side.setter
+    def side(self, value: str):
+        self._side = value
+
+    def __eq__(self, other) -> bool:
+        return self._side == other.side
+
+    def __ne__(self, other) -> bool:
+        return self._side != other.side
+
+
 class CurDamage:
     def __init__(self, damage: Optional[int] = 0):
         self._cur_damage = damage
