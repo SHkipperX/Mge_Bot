@@ -36,16 +36,17 @@ class User_Heros(SqlAlchemyBase):
     id = sa.Column(sa.Integer, nullable=False, autoincrement=True, primary_key=True)
     user_key = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
 
-    Sn_damage = sa.Column(sa.Integer, nullable=False, default=1)
-    Sn_health = sa.Column(sa.Integer, nullable=False, default=1)
-    Sn_accuracy = sa.Column(sa.Integer, nullable=False, default=1)
+    sn_damage = sa.Column(sa.Integer, nullable=False, default=1)
+    sn_health = sa.Column(sa.Integer, nullable=False, default=1)
+    sn_accuracy = sa.Column(sa.Integer, nullable=False, default=1)
 
-    De_damage = sa.Column(sa.Integer, nullable=False, default=1)
-    De_health = sa.Column(sa.Integer, nullable=False, default=1)
-    De_accuracy = sa.Column(sa.Integer, nullable=False, default=1)
+    de_damage = sa.Column(sa.Integer, nullable=False, default=1)
+    de_health = sa.Column(sa.Integer, nullable=False, default=1)
+    de_accuracy = sa.Column(sa.Integer, nullable=False, default=1)
 
-    So_damage = sa.Column(sa.Integer, nullable=False, default=1)
-    So_health = sa.Column(sa.Integer, nullable=False, default=1)
-    So_accuracy = sa.Column(sa.Integer, nullable=False, default=1)
+    so_damage = sa.Column(sa.Integer, nullable=False, default=1)
+    so_health = sa.Column(sa.Integer, nullable=False, default=1)
+    so_accuracy = sa.Column(sa.Integer, nullable=False, default=1)
 
     user = orm.relationship('User')
+

@@ -1,7 +1,4 @@
-# Vk_api
-import time
-
-from vk_api import VkApi, VkUpload
+from vk_api import VkApi, VkUpload  # Vk_api
 from vk_api.bot_longpoll import VkBotEvent, VkBotLongPoll, VkBotEventType, VkBotMessageEvent
 from vk_api.keyboard import VkKeyboard
 from vk_api.utils import get_random_id
@@ -13,24 +10,41 @@ from datetime import datetime as date
 from datetime import timedelta as delta
 from threading import Thread
 import json
+import time
 # Другое_2
 from orm_connector import db_session
 from orm_connector.__all_models import User, User_Heros
 from functions import create_keyboard, decoding_orm, Rock_Paper_Scissors
 from button import BUTTONS_SETTINGS as bs
 from Mode_text import *
-from button import ius, cus, sp_unccor, sp_corr
+from button import pop_up, sp_unccor, sp_corr, speech
 
 # VK нужен для обращения к методам API через код
+# Upload для чего-то другого
 VK = None
 Upload = None
 invite: dict[int, dict] = dict()
 preparation: dict = dict()
+pick_character: dict = dict()
 game: dict[int, dict] = dict()
+general_list = list()
 
 Accept = bs.get('accept')
 Deny = bs.get('deny')
 Rock, Paper, Sciss = bs['rock'], bs['paper'], bs['scissors']
+Sniper, Solder, Demoman = bs['sniper'], bs['solder'], bs['demoman']
+Body_Sh, Head_Sh, Move_R, Move_L = bs['body_shot'], bs['head_shot'], bs['move_R'], bs['move_L']
+
+
+def dump(param: str) -> json:
+    """
+    :return:
+    """
+    if param == 'notU':
+        pop_up['text'] = choice(speech['ntubut'])
+    if param == 'wait':
+        pop_up['text'] = choice(speech['wait'])
+    return json.dumps(pop_up)
 
 
 class Checker_time:
@@ -39,15 +53,19 @@ class Checker_time:
     """
 
     def __init__(self):
-        self.wait = delta(seconds=5)
+        self.wait = delta(minutes=1, seconds=30)
 
-    def delete(self, x: dict, name: str):
-        start_time = x['time']
-        peer_id = x['peer_id']
-        id_1 = x['id']
+    def delete(self, data: dict, name: str):
+        """
+        очистка словарей от просроченных пользователей
+        """
+        start_time = data['time']
+        peer_id = data['peer_id']
+        id_1 = data['id']
+        id_2 = None
 
         if start_time + self.wait < date.now():
-            self.sender(peer_id=peer_id, message='Error Time')
+
             if name == 'invite':
                 id_2 = invite[id_1]['id']
                 del invite[id_1], invite[id_2]
@@ -55,7 +73,17 @@ class Checker_time:
                 id_2 = preparation[id_1]['id']
                 del preparation[id_1], preparation[id_2]
             elif name == 'game':
-                pass
+                id_2 = preparation[id_1]['id']
+                del game[id_1], game[id_2]
+
+            print(general_list)
+            index_1 = general_list.index(id_1)
+            del general_list[index_1]
+            index_2 = general_list.index(id_2)
+            del general_list[index_2]
+            print(general_list)
+
+            self.sender(peer_id=peer_id, message='Error Time')
 
     def sender(self, peer_id: int, message: str) -> None:
         post = {'peer_id': peer_id, 'chat_id': 100000000, 'message': message,
@@ -63,27 +91,26 @@ class Checker_time:
         VK.messages.send(**post)
 
     def pepe(self):
+        """
+        Функция ищет просроченное время и удаляет пользователя из игры
+        :return:
+        """
 
         while True:
             time.sleep(1)
             try:
                 if invite:
-                    for data in invite:
-                        self.delete(invite[data], 'invite')
+                    for id in invite:
+                        self.delete(invite[id], 'invite')
                 if preparation:
-                    for data in preparation:
-                        self.delete(preparation[data], 'preparation')
+                    for id in preparation:
+                        self.delete(preparation[id], 'preparation')
+                if game:
+                    for id in game:
+                        self.delete(game[id], 'game')
 
             except Exception as error:
-                print(error.__repr__())
-
-
-def dump() -> json:
-    """
-    :return:
-    """
-    ius['text'] = choice(sp_unccor)
-    return json.dumps(ius)
+                print(Text_Warning, error, M_0)
 
 
 class Event_commands:
@@ -98,78 +125,157 @@ class Event_commands:
         self.con_mes_id: int = event_dict['conversation_message_id']
         self.payload: dict = event_dict['payload']
         squad: str = self.payload.get('squad')
-        holders_button: list = self.payload['ids']
-        if self.user_id in holders_button:
-            if self.user_id in invite and not squad == 'rps':
+        self.holders_button: list = self.payload['ids']
+
+        if (self.user_id in general_list) and (self.user_id in self.holders_button):
+            if self.user_id in invite:
                 self.toss()
 
-            elif squad == 'rps' and self.user_id in preparation:
+            elif self.user_id in preparation:
                 self.rps()
+
+            elif self.user_id in pick_character:
+                self.character_selection()
         else:
-            self.event_sender(dump())
-
-    def rps(self) -> None:
-        """Rock-Paper-Scissors
-            Выбор победителя
-            """
-        id_2 = preparation[self.user_id]['id']
-        if not preparation[self.user_id]['opt']:
-            preparation[self.user_id]['opt'] = self.payload['type']
-        if preparation[self.user_id]['opt']:
-            self.event_sender(dump())
-        elif preparation[id_2]['opt'] and preparation[self.user_id]['opt']:
-            db_sess = db_session.create_session()
-
-            parm_1 = [self.user_id, preparation[self.user_id]['opt']]
-            parm_2 = [id_2, preparation[id_2]['opt']]
-            flag = Rock_Paper_Scissors(param_1=parm_1, param_2=parm_2)
-
-            user_1 = flag['user_1']
-            user_2 = flag['user_2']
-
-            id_1, status_1 = user_1
-            id_2, status_2 = user_2
-
-            user_name_1 = db_sess.query(User).filter_by(user_id=id_1).first().user_name
-            user_name_2 = db_sess.query(User).filter_by(user_id=id_2).first().user_name
-
-            if status_1:
-                """id_1 победил, id_2 проиграл"""
-                message = f'@id{id_1}({user_name_1}) Победил @id{id_2}({user_name_2})\n{parm_1[1]} Vs {parm_2[1]}'
-                self.messages_edit(message=message)
-            elif status_1 is False:
-                """id_1 проиграл, id_2 победил"""
-                message = f'@id{id_1}({user_name_1}) Проиграл @id{id_2}({user_name_2})\n{parm_1[1]} Vs {parm_2[1]}'
-                self.messages_edit(message=message)
-            else:
-                """Ничья"""
-                message = f'{parm_1[1]} Vs {parm_2[1]}\nПереигрываем'
-                keyboard = create_keyboard(Rock, Paper, Sciss)
-                preparation[self.user_id]['opt'] = None
-                preparation[self.user_id]['time'] = date.now()
-                preparation[id_2]['opt'] = None
-                preparation[id_2]['time'] = date.now()
-                self.messages_edit(message=message, keyboard=keyboard)
+            self.event_sender(dump(param='notU'))
 
     def toss(self) -> None:
         id_1, flag_1 = invite[self.user_id]['id'], invite[self.user_id]['bool']
         id_2, flag_2 = invite[id_1]['id'], invite[id_1]['bool']
-        print(f'{id_1}:{flag_1}\n{id_2}:{flag_2}')
         if flag_2:
-            self.event_sender(event_data=json.dumps(ius))
+            self.event_sender(event_data=dump(param='wait'))
         else:
             if self.payload['type'] == 'accept':
                 """opt - одно из [камень, ножницы, бумага]"""
 
                 preparation[id_1] = {'id': id_2, 'opt': None, 'time': date.now(), 'peer_id': self.peer_id}
                 preparation[id_2] = {'id': id_1, 'opt': None, 'time': date.now(), 'peer_id': self.peer_id}
+                Rock['payload']['ids'] = [id_1, id_2]
+                Paper['payload']['ids'] = [id_1, id_2]
+                Sciss['payload']['ids'] = [id_1, id_2]
                 keyboard = create_keyboard(Rock, Paper, Sciss)
                 self.messages_edit(message='Тут будет продолжение', keyboard=keyboard)
+                del invite[id_1], invite[id_2]
+
 
             else:
                 del invite[id_1], invite[id_2]
 
                 self.messages_edit(message=f'@id{self.user_id} отказался от битвы')
+
+    def rps(self) -> None:
+        """
+        rps -> Rock-Paper-Scissors
+            Выбор победителя
+            """
+        id_2 = preparation[self.user_id]['id']  # user_id_2
+
+        if not preparation[self.user_id]['opt']:
+            preparation[self.user_id]['opt'] = self.payload['type']
+        if preparation[id_2]['opt'] and preparation[self.user_id]['opt']:
+            db_sess = db_session.create_session()
+
+            Sniper['payload']['ids'], Solder['payload']['ids'], Demoman['payload']['ids'] = [self.user_id, id_2], [
+                self.user_id, id_2], [self.user_id, id_2]
+            keyboard = create_keyboard(Sniper, Solder, Demoman)
+
+            parm_1 = [self.user_id, preparation[self.user_id]['opt']]
+            parm_2 = [id_2, preparation[id_2]['opt']]
+            data = Rock_Paper_Scissors(param_1=parm_1, param_2=parm_2)
+
+            user_1 = data['user_1']
+            user_2 = data['user_2']
+
+            id_1, opt_1, status_1 = user_1
+            id_2, opt_2, status_2 = user_2
+
+            pick_character[id_1] = {'enemy_id': id_2, 'step': status_1}
+            pick_character[id_2] = {'enemy_id': id_1, 'step': status_2}
+
+            user_name_1 = db_sess.query(User).filter_by(user_id=id_1).first().user_name
+            user_name_2 = db_sess.query(User).filter_by(user_id=id_2).first().user_name
+
+            if status_1:
+                """id_1 победил, id_2 проиграл"""
+                message = f'@id{id_1}({user_name_1}) Победил @id{id_2}({user_name_2})\n{opt_1} Vs {opt_2}'
+                self.messages_edit(message=message, keyboard=keyboard)
+                del preparation[id_1], preparation[id_2]
+
+
+            elif status_1 is False:
+                """id_1 проиграл, id_2 победил"""
+                message = f'@id{id_1}({user_name_1}) Проиграл @id{id_2}({user_name_2})\n{opt_1} Vs {opt_2}'
+                self.messages_edit(message=message, keyboard=keyboard)
+                del preparation[id_1], preparation[id_2]
+
+
+            else:
+                """Ничья"""
+                message = f'{opt_1} Vs {opt_2}\nПереигрываем'
+
+                Rock['payload']['ids'] = [id_1, id_2]
+                Paper['payload']['ids'] = [id_1, id_2]
+                Sciss['payload']['ids'] = [id_1, id_2]
+
+                keyboard = create_keyboard(Rock, Paper, Sciss)
+
+                preparation[self.user_id]['opt'] = None
+                preparation[self.user_id]['time'] = date.now()
+
+                preparation[id_2]['opt'] = None
+                preparation[id_2]['time'] = date.now()
+            self.messages_edit(message=message, keyboard=keyboard)
+
+    def character_selection(self) -> None:
+        """
+        :return:
+        """
+        db_sess = db_session.create_session()
+        data_user_1 = db_sess.query(User).filter_by(user_id=self.user_id).first()
+        key_id = data_user_1.id
+        name = data_user_1.user_name
+        data_character = db_sess.query(User_Heros).filter_by(user_key=key_id).first()
+
+        """Инициализация персонажа"""
+        step = pick_character[self.user_id]['step']
+        enemy_id = pick_character[self.user_id]['enemy_id']
+        enemy_step = pick_character[enemy_id]['step']
+
+        unit = self.payload['type']
+
+        person = decoding_orm(data_character, unit)[unit]
+        d_lvl, h_lvl, a_lvl = person['d_lvl'], person['h_lvl'], person['a_lvl']
+        game[self.user_id] = {'enemy_id': enemy_id, 'name': name, 'step': step, 'time': date.now(),
+                              'character': {'class': unit, 'd_lvl': d_lvl, 'h_lvl': h_lvl, 'a_lvl': a_lvl, 'hp': int}}
+
+        if self.user_id in game and enemy_id in game:
+            enemy_unit = game[enemy_id]['character']['class']
+            enemy_name = game[enemy_id]['name']
+            if step:  # если право выстрела у нажавшего кнопу полседним
+                # инициализируем кнопочки
+                if unit == 'sniper':
+                    Head_Sh['payload']['step'], Head_Sh['payload']['ids'] = step, [self.user_id, enemy_id]
+                Body_Sh['payload']['step'], Move_R['payload']['step'], Move_L['payload']['step'] = step, step, step
+                Body_Sh['payload']['ids'], Move_R['payload']['ids'], Move_L['payload']['ids'] = [self.user_id, enemy_id], [self.user_id, enemy_id], [
+                    self.user_id, enemy_id]
+                if unit == 'sniper':
+                    keyboard = create_keyboard(Move_L, Head_Sh, Body_Sh, Move_R)
+                else:
+                    keyboard = create_keyboard(Move_L, Body_Sh, Move_R)
+                message = f'Первым стрелять будет @id{self.user_id}({name}) по @id{enemy_id}({enemy_name})'
+            else:  # иначе у другого
+                if enemy_unit == 'sniper':
+                    Head_Sh['payload']['step'], Head_Sh['payload']['ids'] = step, [self.user_id, enemy_id]
+                Body_Sh['payload']['step'], Move_R['payload']['step'], Move_L['payload']['step'] = step, step, step
+                Body_Sh['payload']['ids'], Move_R['payload']['ids'], Move_L['payload']['ids'] = [self.user_id, enemy_id], [self.user_id, enemy_id], [
+                    self.user_id, enemy_id]
+                if enemy_unit == 'sniper':
+                    keyboard = create_keyboard(Move_L, Head_Sh, Body_Sh, Move_R)
+                else:
+                    keyboard = create_keyboard(Move_L, Body_Sh, Move_R)
+                message = f'Первым стрелять будет @id{enemy_id}({enemy_name}) по @id{self.user_id}({name})'
+
+            self.messages_edit(message=message, keyboard=keyboard)
 
     def event_sender(self, event_data: str) -> None:
         """
@@ -259,9 +365,12 @@ class Commands:
         self.sender(message=f'{result}: {nickname}')
 
     def register(self) -> None:
+        """
+        Добавление пользователя в базу данных
+        """
         db_sess = db_session.create_session()
         try:
-            user_object = db_sess.query(User).filter_by(user_id=self.user_id).first().user_id
+            user = db_sess.query(User).filter_by(user_id=self.user_id).first().user_id
             self.sender(message=f'@id{self.user_id}(USER), ты, регистрировался уже!')
         except Exception:
 
@@ -293,6 +402,10 @@ class Commands:
         VK.messages.send(**post)
 
     def invitation_to_the_mge(self) -> None:
+        """
+        Приглашение пользователя на дуэль
+        :return:
+        """
         db_sess = db_session.create_session()
         user = db_sess.query(User).filter_by(user_id=self.user_id).first()
         user_2 = db_sess.query(User).filter_by(user_id=self.reply_user).first()
@@ -313,16 +426,18 @@ class Commands:
                     text = f'@id{id_1}({name_2.title()}), Вас вызывает на дуэль господин @id{id_2}({name.title()})'
                     Accept['payload']['ids'] = [id_1, id_2]
                     Deny['payload']['ids'] = [id_1, id_2]
-                    print(Accept, Deny)
+                    general_list.append(id_1), general_list.append(id_2)
+                    print(general_list)
                     keyboard = create_keyboard(Accept, Deny)
                     invite[id_1] = {'id': id_2, 'bool': False, 'time': date.now(), 'peer_id': self.peer_id}
                     invite[id_2] = {'id': id_1, 'bool': True, 'time': date.now(), 'peer_id': self.peer_id}
 
                     self.sender(message=text, keyboard=keyboard)
             else:
-                self.sender(message=f'Error: {user.user_id}=={user_2.user_id}')
+                self.sender(message=f'Error: @id{user.user_id} == @id{user_2.user_id}')
         else:
-            self.sender(message='Error')
+            name = f'@id{self.reply_user}'
+            self.sender(message=speech['ntrg'][0].replace('@id', name))
         db_sess.close()
 
 
@@ -368,4 +483,3 @@ if __name__ == '__main__':
     Thread(target=Checker_time().pepe).start()
     bot = Bot(token, group_id)
     bot.runner()
-    Commands.create_keyboard()

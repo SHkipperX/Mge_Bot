@@ -20,16 +20,31 @@ BUTTONS_SETTINGS: dict[str, dict] = {
     'paper': {'label': 'Бумага', 'color': WHITE, 'payload': {'type': 'paper', 'squad': 'rps', 'ids': None}},
     'scissors': {'label': 'Ножницы', 'color': GREEN, 'payload': {'type': 'scissors', 'squad': 'rps', 'ids': None}},
 
-    'body_shot': {'label': 'Тело', 'color': GREEN, 'payload': {'type': 'bd_sh', 'squad': 'game', 'ids': None}},
-    'head_shot': {'label': 'Голова', 'color': RED, 'payload': {'type': 'hs_sh', 'squad': 'game', 'ids': None}},
-    'move_R': {'label': 'Вправо', 'color': BLUE, 'payload': {'type': 'move_r', 'squad': 'game', 'ids': None}},
-    'move_L': {'label': 'Влево', 'color': BLUE, 'payload': {'type': 'move_l', 'squad': 'game', 'ids': None}}
+    'sniper': {'label': 'Снайпер', 'color': RED, 'payload': {'type': 'sniper', 'squad': 'class'}},
+    'solder': {'label': 'Солдат', 'color': BLUE, 'payload': {'type': 'solder', 'squad': 'class'}},
+    'demoman': {'label': 'Подрывник', 'color': GREEN, 'payload': {'type': 'demoman', 'squad': 'class'}},
+
+    'body_shot': {'label': 'Тело', 'color': GREEN,
+                  'payload': {'type': 'bd_sh', 'squad': 'game', 'step': False, 'ids': []}},
+    'head_shot': {'label': 'Голова', 'color': RED,
+                  'payload': {'type': 'hs_sh', 'squad': 'game', 'step': False, 'ids': []}},
+    'move_R': {'label': 'Вправо', 'color': BLUE,
+               'payload': {'type': 'move_r', 'squad': 'game', 'step': False, 'ids': []}},
+    'move_L': {'label': 'Влево', 'color': BLUE,
+               'payload': {'type': 'move_l', 'squad': 'game', 'step': False, 'ids': []}}
 }
 
 sp_unccor = ['1', '2', '3', '4', '5', '6', '7', '8']
-ius = {"type": "show_snackbar", "text": None}
+pop_up = {"type": "show_snackbar", "text": None}
 
 sp_corr = ['1', '2', '3', '4', '5', '6', '7', '8']
 cus = {"type": "show_snackbar", "text": None}
 
+speech = {'inv': ['@id уже приглашён кем-то!', '@id ожидает своей битвы!', '@id всё ещё в раздумьях, подожди ещё!'],
+          'ntubut': ['Это не твоя кнопочка!❏', 'не трогай меня ╱╸◠╺╲', 'Я могу и разочароваться в тебеت'],
+          '==': ['@id с самим собой?〠', '@id, а-за-за, нельзя так ㋡', '@id, много умный играть против себя?'],
+          'ntrg': ['@id ещё не регистрировался для участия в битвах', '@id, не находится в списках МГЕ...'],
+          'wait': ['Ожидай ответа!']}
 
+save_data_class = {'enemy_id': int, 'enemy_name': str, 'step': bool,
+                   'character': {'class': str, 'd_lvl': int, 'h_lvl': int, 'a_lvl': int, 'hp': int}}

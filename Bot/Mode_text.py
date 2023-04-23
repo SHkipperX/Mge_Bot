@@ -1,3 +1,6 @@
+import sys
+import time
+
 # ЦВЕТА ТЕКСТА для отображение в консоль
 T_RED = '\033[31m'
 T_BLACK = '\033[30m'
@@ -23,6 +26,7 @@ M_0 = '\033[0m'
 M_FAT = '\033[1m'
 M_CURSIVE = '\033[3m'
 M_UNDERLINE = '\033[4m'
-M_Fast_BLINK = '\033[6m'
-M_Slow_BLINK = '\033[5m'
 M_TBT = '\033[7m'
+
+Text_Warning = '{}{}{}'.format(T_RED, M_FAT, B_BLACK)
+Text_Complete = '{}{}{}'.format(T_BLACK, M_CURSIVE, B_GREEN)
