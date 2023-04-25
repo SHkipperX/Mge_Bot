@@ -1,3 +1,5 @@
+import os
+
 from vk_api import VkApi, VkUpload  # Vk_api
 from vk_api.bot_longpoll import VkBotEvent, VkBotLongPoll, VkBotEventType, VkBotMessageEvent
 from vk_api.keyboard import VkKeyboard
@@ -13,8 +15,8 @@ import json
 import time
 # Другое_2
 from orm_connector import db_session
-from orm_connector.__all_models import User, User_Heros
-from functions import create_keyboard, decoding_orm, Rock_Paper_Scissors
+from orm_connector.__all_models import User, User_Heros, User_Stat
+from functions import create_keyboard, decoding_orm, Rock_Paper_Scissors, add_user_to_button
 from button import BUTTONS_SETTINGS as bs
 from Mode_text import *
 from button import pop_up, sp_unccor, sp_corr, speech
@@ -30,7 +32,7 @@ game: dict[int, dict] = dict()
 Lvl_up: dict = dict()
 general_list = list()
 
-TEST = None
+page_id = None
 
 Accept = bs.get('accept')
 Deny = bs.get('deny')
@@ -40,6 +42,7 @@ Body_Sh, Head_Sh, Move_R, Move_L = bs['body_shot'], bs['head_shot'], bs['move_R'
 Units = bs['units']
 menu_set = bs['menu_setting']
 Stat = menu_set['stat']
+Back = bs['back']
 Sniper_up = menu_set['units']['sniper']
 Solder_up = menu_set['units']['solder']
 Demoman_up = menu_set['units']['demoman']
@@ -86,12 +89,12 @@ class Checker_time:
                 id_2 = preparation[id_1]['id']
                 del game[id_1], game[id_2]
 
-            print(general_list)
+
             index_1 = general_list.index(id_1)
             del general_list[index_1]
             index_2 = general_list.index(id_2)
             del general_list[index_2]
-            print(general_list)
+
 
             self.sender(peer_id=peer_id, message='Error Time')
 
@@ -135,6 +138,7 @@ class Event_commands:
         self.con_mes_id: int = event_dict['conversation_message_id']
         self.payload: dict = event_dict['payload']
         squad: str = self.payload.get('squad')
+        print(squad)
         self.holders_button: list = self.payload['ids']
 
         if (self.user_id in general_list) and (self.user_id in self.holders_button):
@@ -146,6 +150,10 @@ class Event_commands:
 
             elif self.user_id in pick_character:
                 self.character_selection()
+
+            elif squad == 'game':
+                self.mge_pvp()
+
         elif squad == 'menu' and self.user_id in self.holders_button:
             Menu(type_button=self.payload['type'], user_id=self.user_id, conversation_message_id=self.con_mes_id,
                  peer_id=self.peer_id)
@@ -153,6 +161,7 @@ class Event_commands:
             self.event_sender(dump(param='notU'))
 
     def toss(self) -> None:
+        global Rock, Paper, Sciss
         id_1, flag_1 = invite[self.user_id]['id'], invite[self.user_id]['bool']
         id_2, flag_2 = invite[id_1]['id'], invite[id_1]['bool']
         if flag_2:
@@ -163,9 +172,8 @@ class Event_commands:
 
                 preparation[id_1] = {'id': id_2, 'opt': None, 'time': date.now(), 'peer_id': self.peer_id}
                 preparation[id_2] = {'id': id_1, 'opt': None, 'time': date.now(), 'peer_id': self.peer_id}
-                Rock['payload']['ids'] = [id_1, id_2]
-                Paper['payload']['ids'] = [id_1, id_2]
-                Sciss['payload']['ids'] = [id_1, id_2]
+                buttons = add_user_to_button(Rock, Paper, Sciss, User_1=id_1, User_2=id_2)
+                Rock, Paper, Sciss = buttons
                 keyboard = create_keyboard(Rock, Paper, Sciss)
                 self.messages_edit(message='Тут будет продолжение', keyboard=keyboard)
                 del invite[id_1], invite[id_2]
@@ -177,6 +185,7 @@ class Event_commands:
                 self.messages_edit(message=f'@id{self.user_id} отказался от битвы')
 
     def rps(self) -> None:
+        global Sniper, Solder, Demoman, Rock, Paper, Sciss
         """
         rps -> Rock-Paper-Scissors
             Выбор победителя
@@ -188,8 +197,8 @@ class Event_commands:
         if preparation[id_2]['opt'] and preparation[self.user_id]['opt']:
             db_sess = db_session.create_session()
 
-            Sniper['payload']['ids'], Solder['payload']['ids'], Demoman['payload']['ids'] = [self.user_id, id_2], [
-                self.user_id, id_2], [self.user_id, id_2]
+            buttons = add_user_to_button(Sniper, Solder, Demoman, User_1=self.user_id, User_2=id_2)
+            Sniper, Solder, Demoman = buttons
             keyboard = create_keyboard(Sniper, Solder, Demoman)
 
             parm_1 = [self.user_id, preparation[self.user_id]['opt']]
@@ -225,10 +234,8 @@ class Event_commands:
             else:
                 """Ничья"""
                 message = f'{opt_1} Vs {opt_2}\nПереигрываем'
-
-                Rock['payload']['ids'] = [id_1, id_2]
-                Paper['payload']['ids'] = [id_1, id_2]
-                Sciss['payload']['ids'] = [id_1, id_2]
+                buttons = add_user_to_button(Rock, Paper, Sciss, User_1=id_1, User_2=id_2)
+                Rock, Paper, Sciss = buttons
 
                 keyboard = create_keyboard(Rock, Paper, Sciss)
 
@@ -240,7 +247,9 @@ class Event_commands:
             self.messages_edit(message=message, keyboard=keyboard)
 
     def character_selection(self) -> None:
+        global Move_L, Head_Sh, Body_Sh, Move_R
         """
+        //выбор Персонажей
         :return:
         """
         db_sess = db_session.create_session()
@@ -250,13 +259,12 @@ class Event_commands:
         data_character = db_sess.query(User_Heros).filter_by(user_key=key_id).first()
 
         """Инициализация персонажа"""
-        step = pick_character[self.user_id]['step']
-        enemy_id = pick_character[self.user_id]['enemy_id']
-        enemy_step = pick_character[enemy_id]['step']
+        step: bool = pick_character[self.user_id]['step']
+        enemy_id: int = pick_character[self.user_id]['enemy_id']
 
-        unit = self.payload['type']
+        unit: str = self.payload['type']
 
-        person = decoding_orm(data_character, unit)[unit]
+        person: dict = decoding_orm(data_character, unit)[unit]
         d_lvl, h_lvl, a_lvl = person['d_lvl'], person['h_lvl'], person['a_lvl']
         game[self.user_id] = {'enemy_id': enemy_id, 'name': name, 'step': step, 'time': date.now(),
                               'character': {'class': unit, 'd_lvl': d_lvl, 'h_lvl': h_lvl, 'a_lvl': a_lvl, 'hp': int}}
@@ -265,34 +273,42 @@ class Event_commands:
             enemy_unit = game[enemy_id]['character']['class']
             enemy_name = game[enemy_id]['name']
             if step:  # если право выстрела у нажавшего кнопу полседним
-                # инициализируем кнопочки
                 if unit == 'sniper':
-                    Head_Sh['payload']['step'], Head_Sh['payload']['ids'] = step, [self.user_id, enemy_id]
-                Body_Sh['payload']['step'], Move_R['payload']['step'], Move_L['payload']['step'] = step, step, step
-                Body_Sh['payload']['ids'], Move_R['payload']['ids'], Move_L['payload']['ids'] = [self.user_id,
-                                                                                                 enemy_id], [
-                    self.user_id, enemy_id], [
-                    self.user_id, enemy_id]
-                if unit == 'sniper':
+                    buttons = add_user_to_button(Move_L, Head_Sh, Body_Sh, Move_R, User_1=self.user_id)
+                    Move_L, Head_Sh, Body_Sh, Move_R = buttons
                     keyboard = create_keyboard(Move_L, Head_Sh, Body_Sh, Move_R)
                 else:
+                    buttons = add_user_to_button(Move_L, Body_Sh, Move_R, User_1=self.user_id)
+                    Move_L, Body_Sh, Move_R = buttons
                     keyboard = create_keyboard(Move_L, Body_Sh, Move_R)
                 message = f'Первым стрелять будет @id{self.user_id}({name}) по @id{enemy_id}({enemy_name})'
+                self.messages_edit(message=message, keyboard=keyboard)
+
             else:  # иначе у другого
                 if enemy_unit == 'sniper':
-                    Head_Sh['payload']['step'], Head_Sh['payload']['ids'] = step, [self.user_id, enemy_id]
-                Body_Sh['payload']['step'], Move_R['payload']['step'], Move_L['payload']['step'] = step, step, step
-                Body_Sh['payload']['ids'], Move_R['payload']['ids'], Move_L['payload']['ids'] = [self.user_id,
-                                                                                                 enemy_id], [
-                    self.user_id, enemy_id], [
-                    self.user_id, enemy_id]
-                if enemy_unit == 'sniper':
+                    buttons = add_user_to_button(Move_L, Head_Sh, Body_Sh, Move_R, User_1=enemy_id)
+                    Move_L, Head_Sh, Body_Sh, Move_R = buttons
                     keyboard = create_keyboard(Move_L, Head_Sh, Body_Sh, Move_R)
                 else:
+                    buttons = add_user_to_button(Move_L, Body_Sh, Move_R, User_1=enemy_id)
+                    Move_L, Body_Sh, Move_R = buttons
                     keyboard = create_keyboard(Move_L, Body_Sh, Move_R)
                 message = f'Первым стрелять будет @id{enemy_id}({enemy_name}) по @id{self.user_id}({name})'
+                self.messages_edit(message=message, keyboard=keyboard)
 
-            self.messages_edit(message=message, keyboard=keyboard)
+    def mge_pvp(self):
+        """
+        PvP 2 игроков
+        """
+        data_Unit = game[self.user_id]['character']
+        d_lvl, h_lvl, a_lvl = data_Unit['d_lvl'], data_Unit['h_lvl'], data_Unit['a_lvl']
+        unit = data_Unit['class']
+
+        enemy_id = game[self.user_id]['enemy_id']
+        Hp_enemy = game[enemy_id]['character']['hp']
+
+        game[self.user_id]['step'] = False
+        game[enemy_id]['step'] = True
 
     def event_sender(self, event_data: str) -> None:
         """
@@ -326,17 +342,18 @@ class Menu:
         self.user_id = user_id
         self.con_mes_id = conversation_message_id
         self.peer_id = peer_id
+        print(type_button)
 
         if type_button == 'persons':
             self.person()
         elif type_button == 'stat':
-            pass
+            self.all_stat()
         elif type_button == 'sniper_up':
-            pass
+            self.sn_person_lvl()
         elif type_button == 'solder_up':
-            pass
+            self.so_person_lvl()
         elif type_button == 'demoman_up':
-            pass
+            self.de_person_lvl()
         elif type_button == 'damage':
             pass
         elif type_button == 'health':
@@ -344,8 +361,36 @@ class Menu:
         elif type_button == 'accuracy':
             pass
         elif type_button == 'back':
-            pass
+            self.back()
+    def back(self):
+        event_dict = dict(from_id=self.user_id, text='')
+        Commands(event_dict).create_menu()
+
     def sn_person_lvl(self):
+        global Damage, Health, Accuracy
+        db_sess = db_session.create_session()
+        key_id = db_sess.query(User).filter_by(user_id=self.user_id).first().id
+        Sniper_lvls = db_sess.query(User_Heros).filter_by(user_key=key_id).first()
+        db_sess.close()
+
+        sn_damage = Sniper_lvls.sn_damage
+        sn_health = Sniper_lvls.sn_health
+        sn_accuracy = Sniper_lvls.sn_accuracy
+
+        message = f'Снайпер:\n' \
+                  f'•Lvl урона: {sn_damage}\n' \
+                  f'•Lvl здоровья: {sn_health}\n' \
+                  f'•Lvl точности: {sn_accuracy}'
+
+        buttons = add_user_to_button(Damage, Health, Accuracy, User_1=self.user_id)
+        Damage, Health, Accuracy = buttons
+        keyboard = create_keyboard(Damage, Health, Accuracy)
+        self.messages_edit(message=message, keyboard=keyboard)
+
+    def so_person_lvl(self):
+        pass
+
+    def de_person_lvl(self):
         pass
 
     def person(self):
@@ -359,12 +404,45 @@ class Menu:
         db_sess = db_session.create_session()
         key_id = db_sess.query(User).filter_by(user_id=self.user_id).first().id
         Char = db_sess.query(User_Heros).filter_by(user_key=key_id).first()
-        message = f'Суммарный уровень:\n' \
-                  f'●Снайпер {Char.sn_damage + Char.sn_accuracy + Char.sn_health}lvl\n' \
-                  f'🚀Солдат {Char.so_damage + Char.so_accuracy + Char.so_health}lvl\n' \
-                  f'🔥Подрывник {Char.de_damage + Char.de_accuracy + Char.de_health}lvl'
-
         db_sess.close()
+
+        sum_lvl_sniper = Char.sn_damage + Char.sn_accuracy + Char.sn_health
+        sum_lvl_solder = Char.so_damage + Char.so_accuracy + Char.so_health
+        sum_lvl_demoman = Char.de_damage + Char.de_accuracy + Char.de_health
+        message = f'Суммарный уровень:\n' \
+                  f'●Снайпер {sum_lvl_sniper}lvl\n' \
+                  f'🚀Солдат {sum_lvl_solder}lvl\n' \
+                  f'🔥Подрывник {sum_lvl_demoman}lvl'
+
+        self.messages_edit(message=message, keyboard=keyboard)
+
+    def all_stat(self):
+        global Back
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).filter_by(user_id=self.user_id).first()
+
+        name = user.user_name
+        register = user.reg_date
+        points = user.points
+        games = user.count_of_game
+        wins = user.wins
+        loses = user.loses
+        if wins != 0:
+            mes_win = f'Побед: {wins}({wins / games * 100:.2f}%)'
+        else:
+            mes_win = f'Побед: 0'
+        if loses != 0:
+            mes_lose = f'Поражений: {loses}({loses / games * 100:.2f}%)'
+        else:
+            mes_lose = f'Поражений: 0'
+
+        message = f'Статистика @id{self.user_id}({name}) | {register}:\n' \
+                  f'Очки: {points} | Звание: ///\n' \
+                  f'Игры: {games}\n' \
+                  f'{mes_win} | {mes_lose}'
+        buttons = add_user_to_button(Back, User_1=self.user_id)
+        Back = buttons[0]
+        keyboard = create_keyboard(Back)
         self.messages_edit(message=message, keyboard=keyboard)
 
     def messages_edit(self, message: Optional[str], attachment: Optional[object] = None,
@@ -382,44 +460,6 @@ class Menu:
         VK.messages.edit(**post)
 
 
-class Bot:
-    """
-    DOC
-    Тело бота
-    """
-
-    def __init__(self, Token: str, Page_id: str, App_id=6441755):
-        global VK, Upload
-        self.Token = Token
-        self.Page_id = Page_id
-
-        self.session = VkApi(token=Token, app_id=App_id)
-        self.VkBotLongPoll = VkBotLongPoll(vk=self.session, group_id=Page_id)
-        VK = self.session.get_api()
-        Upload = VkUpload(self.session)
-        db_session.global_init(db_file=f'data/{Page_id}.db')
-
-    def runner(self) -> NoReturn:
-        global TEST
-        """
-        :типа докстринг: ахахахаха
-        """
-        while True:
-            try:
-                for event in self.VkBotLongPoll.listen():
-                    # print(T_RED, M_FAT, event, M_0)
-                    # print(event.message)
-                    if event.type == VkBotEventType.MESSAGE_EVENT:
-                        Event_commands(event_dict=event.object)
-                    elif event.type == VkBotEventType.MESSAGE_NEW and event.from_chat:
-                        Commands(event_dict=event.message)
-
-
-
-            except Exception as error:
-                print(T_RED, M_FAT, error, '\n', format_exc(), M_0)
-
-
 class Commands:
     """
     Обраотчик комманд
@@ -427,13 +467,14 @@ class Commands:
     """
 
     def __init__(self, event_dict: dict):
-        # print(event_object)
+        print(event_dict)
         self.event_dict = event_dict
         self.peer_id: int = event_dict.get('peer_id')  # chat id
         self.user_id: int = event_dict.get('from_id')
         self.reply_user = None  # то же что и user_id для 2 человека
         self.message: str = event_dict.get('text').lower()
-        self.date: object = date.utcfromtimestamp(event_dict.get('date'))  # дата сообщения
+        if event_dict.get('date'):
+            self.date: object = date.utcfromtimestamp(event_dict.get('date'))  # дата сообщения
         self.reply: dict = event_dict.get('reply_message')
         reply = self.reply
         if reply:
@@ -446,6 +487,20 @@ class Commands:
             pass
 
         self.command_handler()
+
+    def sender(self, message: Optional[str] = None, keyboard: Optional[object] = None,
+               attachments: Optional[object] = None) -> None:
+        """
+        Отправка сообщения в беседу
+        :param message: (str) отправляемый текст
+        :param keyboard: (VkKeyBoard) клавиатура к сообщению
+        :param attachments: (object) фото/аудио фаил (паблик не может отправлять видео фаилы)
+        :return:
+        """
+        post = {'peer_id': self.peer_id, 'chat_id': 100000000, 'message': message, 'keyboard': keyboard,
+                'attachments': attachments, 'sticker_id': None, 'peer_ids': self.peer_id,
+                'random_id': get_random_id()}
+        VK.messages.send(**post)
 
     def command_handler(self) -> None:
         """
@@ -495,13 +550,19 @@ class Commands:
         except Exception:
 
             user = User()
+
             user.user_id = self.user_id
             user.user_name = 'участник'
             db_sess.add(user)
             db_sess.commit()
+
             hero = User_Heros(user_key=user.id)
+            stats = User_Stat(user_key=user.id)
             db_sess.add(hero)
             db_sess.commit()
+            db_sess.add(stats)
+            db_sess.commit()
+
             self.sender(message=f'@id{self.user_id}(USER) Зарегестрирован на участие в МГЕ схватках!')
 
         finally:
@@ -510,27 +571,16 @@ class Commands:
     def create_menu(self):
         db_sess = db_session.create_session()
         user = db_sess.query(User).filter_by(user_id=self.user_id).scalar()
-        print(user)
         if user:
             Units['payload']['ids'], Stat['payload']['ids'] = [self.user_id], [self.user_id]
             keyboard = create_keyboard(Units, Stat)
             message = f'@id{self.user_id}(Меню)'
             self.sender(message=message, keyboard=keyboard)
-        db_sess.close()
 
-    def sender(self, message: Optional[str] = None, keyboard: Optional[object] = None,
-               attachments: Optional[object] = None) -> None:
-        """
-        Отправка сообщения в беседу
-        :param message: (str) отправляемый текст
-        :param keyboard: (VkKeyBoard) клавиатура к сообщению
-        :param attachments: (object) фото/аудио фаил (паблик не может оправлять видео фаилы)
-        :return:
-        """
-        post = {'peer_id': self.peer_id, 'chat_id': 100000000, 'message': message, 'keyboard': keyboard,
-                'attachments': attachments, 'sticker_id': None, 'peer_ids': self.peer_id,
-                'random_id': get_random_id()}
-        VK.messages.send(**post)
+        else:
+            message = f'@id{self.user_id}, не зарегистрирован!'
+            self.sender(message=message)
+        db_sess.close()
 
     def invitation_to_the_mge(self) -> None:
         """
@@ -572,11 +622,47 @@ class Commands:
         db_sess.close()
 
 
+class Bot:
+    """
+    DOC
+    Тело бота
+    """
+
+    def __init__(self, Token: str, Page_id: str, App_id=6441755):
+        global VK, Upload, page_id
+        page_id = Page_id
+        self.Token = Token
+        self.Page_id = Page_id
+
+        self.session = VkApi(token=Token, app_id=App_id)
+        self.VkBotLongPoll = VkBotLongPoll(vk=self.session, group_id=Page_id)
+        VK = self.session.get_api()
+        Upload = VkUpload(self.session)
+        db_session.global_init(db_file=f'data/{Page_id}/{Page_id}.db')
+
+    def runner(self) -> NoReturn:
+        """
+        :типа докстринг: ахахахаха
+        """
+        while True:
+            try:
+                for event in self.VkBotLongPoll.listen():
+                    if event.type == VkBotEventType.MESSAGE_EVENT:
+                        Event_commands(event_dict=event.object)
+                    elif event.type == VkBotEventType.MESSAGE_NEW and event.from_chat:
+                        Commands(event_dict=event.message)
+
+            except Exception as error:
+                print(T_RED, M_FAT, error, '\n', format_exc(), M_0)
+
+
 if __name__ == '__main__':
     from setting import setting as setting
 
     token = setting['token']
     group_id = setting['group_id']
-    Thread(target=Checker_time().pepe).start()
+    Thread(target=Checker_time().pepe)
     bot = Bot(token, group_id)
-    bot.runner()
+    run = bot.runner
+    Thread(target=run, args=()).start()
+    print(True)

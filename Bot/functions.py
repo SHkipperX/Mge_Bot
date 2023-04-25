@@ -4,9 +4,11 @@ import random
 
 
 def decoding_orm(user_object: object, character: str) -> dict:
+    """___Функция под вопросом___"""
     key = 'sn' if character == 'sniper' else 'so' if character == 'solder' else 'de'
     user_object = user_object.__dict__
-    user_data = dict(sniper={}, solder={}, demoman={})
+    user_data = dict()
+    user_data[character] = dict()
 
     for atr in user_object:
         if key in atr:
@@ -17,8 +19,16 @@ def decoding_orm(user_object: object, character: str) -> dict:
             elif 'accuracy' in atr:
                 user_data[character]['a_lvl'] = user_object[atr]
 
-
     return user_data
+
+
+def add_user_to_button(*args, User_1: int, User_2: int = None):
+    """Добавление пользователей в кнопочки =)"""
+    buttons = []
+    for button in args:
+        button['payload']['ids'] = [User_1, User_2]
+        buttons.append(button)
+    return buttons
 
 
 def create_keyboard(*args) -> VkKeyboard.get_keyboard:
@@ -31,7 +41,6 @@ def create_keyboard(*args) -> VkKeyboard.get_keyboard:
     keyboard = VkKeyboard(one_time=False, inline=True)
 
     for num, kwargs in enumerate(args):
-        print(kwargs)
         try:
             if (num % 3 == 0 and num != 0) and len(args) != 4:
                 keyboard.add_line()

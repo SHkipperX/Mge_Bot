@@ -4,6 +4,18 @@ from sqlalchemy import orm
 from .db_session import SqlAlchemyBase
 from typing import *
 
+"""
+Перфиксы классов:
+sn - Sniper; de - Demoman; so - Solder
+
+Уровни:
+damage - урон; health - здоровье; accuracy - точность
+
+class User - основные данные пользователя
+class User_Heros - данные о уровне персонажей
+class User_Stat - Статистика о каждом персонаже: урон, выстрелы, попадания, игры, победы, поражения
+"""
+
 
 class User(SqlAlchemyBase):
     __tablename__ = 'Users'
@@ -19,19 +31,13 @@ class User(SqlAlchemyBase):
     loses = sa.Column(sa.Integer, nullable=False, default=0)
 
     heros = orm.relationship('User_Heros', back_populates='user')
+    stats = orm.relationship('User_Stat', back_populates='user')
 
     def __repr__(self):
         return f'<{User.__class__.__name__}> {self.id}: {self.user_id}[{self.user_name}]'
 
 
 class User_Heros(SqlAlchemyBase):
-    """
-    Перфиксы классов:
-    Sn - Sniper; De - Demoman; So - Solder
-
-    Уровни:
-    damage - урон; health - здоровье; accuracy - точность
-    """
     __tablename__ = 'User_Heros'
     id = sa.Column(sa.Integer, nullable=False, autoincrement=True, primary_key=True)
     user_key = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
@@ -50,3 +56,31 @@ class User_Heros(SqlAlchemyBase):
 
     user = orm.relationship('User')
 
+
+class User_Stat(SqlAlchemyBase):
+    __tablename__ = 'users_stat'
+    id = sa.Column(sa.Integer, nullable=False, autoincrement=True, primary_key=True)
+    user_key = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
+
+    sn_damage = sa.Column(sa.Integer, nullable=False, default=0)
+    sn_shot = sa.Column(sa.Integer, nullable=False, default=0)
+    sn_hits = sa.Column(sa.Integer, nullable=False, default=0)
+    sn_games = sa.Column(sa.Integer, nullable=False, default=0)
+    sn_wins = sa.Column(sa.Integer, nullable=False, default=0)
+    sn_loses = sa.Column(sa.Integer, nullable=False, default=0)
+
+    so_damage = sa.Column(sa.Integer, nullable=False, default=0)
+    so_shot = sa.Column(sa.Integer, nullable=False, default=0)
+    so_hits = sa.Column(sa.Integer, nullable=False, default=0)
+    so_games = sa.Column(sa.Integer, nullable=False, default=0)
+    so_wins = sa.Column(sa.Integer, nullable=False, default=0)
+    so_loses = sa.Column(sa.Integer, nullable=False, default=0)
+
+    de_damage = sa.Column(sa.Integer, nullable=False, default=0)
+    de_shot = sa.Column(sa.Integer, nullable=False, default=0)
+    de_hits = sa.Column(sa.Integer, nullable=False, default=0)
+    de_games = sa.Column(sa.Integer, nullable=False, default=0)
+    de_wins = sa.Column(sa.Integer, nullable=False, default=0)
+    de_loses = sa.Column(sa.Integer, nullable=False, default=0)
+
+    user = orm.relationship('User')
