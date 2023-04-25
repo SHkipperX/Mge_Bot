@@ -5,6 +5,9 @@ setting = {
     'token': 'vk1.a.hI1q03fpbvvPNnai_zoiv75AykKS2cjusMeB9HYunyvz7tmLnP5v7MfQrZcE5K9CiI6cCbIlLn0K_5019ySGEhJfD_lq'
              'f0qITVlPOC1fPZUEU6AquMUDy0ZrgGHZDm0pPyc_k4cKekFBhy4lDMps71vHyw28gtUVi3Dk9V5xK07QAkRZkgRNbsU8BcpJ8r3g'
              '0xDpsyRn5ht8H1h_aCRaYw',
+    'token_2': 'vk1.a.eETYoz9jgvp4m_F_mr_3pkwCWA2k32Gkz-VfxsrbGUQlVU1owrQtlBjVVcDvELhLpMF_yDSXUL1nkHteCfs9ToVcsLn'
+               'JR8zNrfp9Pz4OAWpKr6fI8-YOLpAejhXqiq4pJmmeX7ANWw0f72JsbQ62rPwIz33GiPpASMj_ZkkRPI2obu0GtMuY9y77DpAJYzG'
+               '0g6ret8OHTfMZg7nTgNGVag',
     'group_id': '218947192',
     'app_id': '6441755'
 }

@@ -1,5 +1,4 @@
 import os
-
 from vk_api import VkApi, VkUpload  # Vk_api
 from vk_api.bot_longpoll import VkBotEvent, VkBotLongPoll, VkBotEventType, VkBotMessageEvent
 from vk_api.keyboard import VkKeyboard
@@ -16,8 +15,8 @@ import time
 # Другое_2
 from orm_connector import db_session
 from orm_connector.__all_models import User, User_Heros, User_Stat
-from functions import create_keyboard, decoding_orm, Rock_Paper_Scissors, add_user_to_button
-from button import BUTTONS_SETTINGS as bs
+from functions import create_keyboard, decoding_orm, Rock_Paper_Scissors, add_user_to_button, Character_show_lvl
+from buttons__init__ import *
 from Mode_text import *
 from button import pop_up, sp_unccor, sp_corr, speech
 
@@ -31,22 +30,6 @@ pick_character: dict = dict()
 game: dict[int, dict] = dict()
 Lvl_up: dict = dict()
 general_list = list()
-
-page_id = None
-
-Accept = bs.get('accept')
-Deny = bs.get('deny')
-Rock, Paper, Sciss = bs['rock'], bs['paper'], bs['scissors']
-Sniper, Solder, Demoman = bs['sniper'], bs['solder'], bs['demoman']
-Body_Sh, Head_Sh, Move_R, Move_L = bs['body_shot'], bs['head_shot'], bs['move_R'], bs['move_L']
-Units = bs['units']
-menu_set = bs['menu_setting']
-Stat = menu_set['stat']
-Back = bs['back']
-Sniper_up = menu_set['units']['sniper']
-Solder_up = menu_set['units']['solder']
-Demoman_up = menu_set['units']['demoman']
-Damage, Health, Accuracy = menu_set['lvl_up']['damage'], menu_set['lvl_up']['health'], menu_set['lvl_up']['accuracy']
 
 
 def dump(param: str) -> json:
@@ -89,12 +72,10 @@ class Checker_time:
                 id_2 = preparation[id_1]['id']
                 del game[id_1], game[id_2]
 
-
             index_1 = general_list.index(id_1)
             del general_list[index_1]
             index_2 = general_list.index(id_2)
             del general_list[index_2]
-
 
             self.sender(peer_id=peer_id, message='Error Time')
 
@@ -138,7 +119,6 @@ class Event_commands:
         self.con_mes_id: int = event_dict['conversation_message_id']
         self.payload: dict = event_dict['payload']
         squad: str = self.payload.get('squad')
-        print(squad)
         self.holders_button: list = self.payload['ids']
 
         if (self.user_id in general_list) and (self.user_id in self.holders_button):
@@ -342,63 +322,79 @@ class Menu:
         self.user_id = user_id
         self.con_mes_id = conversation_message_id
         self.peer_id = peer_id
-        print(type_button)
 
         if type_button == 'persons':
             self.person()
         elif type_button == 'stat':
             self.all_stat()
-        elif type_button == 'sniper_up':
-            self.sn_person_lvl()
-        elif type_button == 'solder_up':
-            self.so_person_lvl()
-        elif type_button == 'demoman_up':
-            self.de_person_lvl()
-        elif type_button == 'damage':
-            pass
-        elif type_button == 'health':
-            pass
-        elif type_button == 'accuracy':
-            pass
+        elif type_button in ('sniper_up', 'solder_up', 'demoman_up'):
+            self.show_Lvl()
+        elif type_button in ('damage', 'health', 'accuracy'):
+            self.character_up()
         elif type_button == 'back':
             self.back()
-    def back(self):
-        event_dict = dict(from_id=self.user_id, text='')
-        Commands(event_dict).create_menu()
 
-    def sn_person_lvl(self):
-        global Damage, Health, Accuracy
+    def back(self):
+        global Units, Stat
+        buttons = add_user_to_button(Units, Stat, User_1=self.user_id)
+        Units, Stat = buttons
+        keyboard = create_keyboard(Units, Stat)
+        message = f'@id{self.user_id}(Меню)'
+        self.messages_edit(message=message, keyboard=keyboard)
+
+    def show_Lvl(self):
+        global Damage, Health, Accuracy, Back
         db_sess = db_session.create_session()
         key_id = db_sess.query(User).filter_by(user_id=self.user_id).first().id
-        Sniper_lvls = db_sess.query(User_Heros).filter_by(user_key=key_id).first()
+        Unit_lvls = db_sess.query(User_Heros).filter_by(user_key=key_id).first()
         db_sess.close()
+        if self.type_button == 'sniper_up':
+            message = Character_show_lvl(Unit_lvls).show_lvl_Sniper()
+        elif self.type_button == 'solder_up':
+            message = Character_show_lvl(Unit_lvls).show_lvl_Solder()
+        elif self.type_button == 'solder_up':
+            message = Character_show_lvl(Unit_lvls).show_lvl_Demoman()
 
-        sn_damage = Sniper_lvls.sn_damage
-        sn_health = Sniper_lvls.sn_health
-        sn_accuracy = Sniper_lvls.sn_accuracy
+        Lvl_up[self.user_id] = self.type_button
 
-        message = f'Снайпер:\n' \
-                  f'•Lvl урона: {sn_damage}\n' \
-                  f'•Lvl здоровья: {sn_health}\n' \
-                  f'•Lvl точности: {sn_accuracy}'
-
-        buttons = add_user_to_button(Damage, Health, Accuracy, User_1=self.user_id)
-        Damage, Health, Accuracy = buttons
+        buttons = add_user_to_button(Damage, Health, Accuracy, Back, User_1=self.user_id)
+        Damage, Health, Accuracy, Back = buttons
         keyboard = create_keyboard(Damage, Health, Accuracy)
         self.messages_edit(message=message, keyboard=keyboard)
 
-    def so_person_lvl(self):
-        pass
-
-    def de_person_lvl(self):
-        pass
+    def character_up(self):
+        global Damage, Health, Accuracy, Back
+        # УРОН - 1-10лвл ТОЧНОСТЬ - 1-5лвл ЗДОРОВЬЕ - 1-15лвл
+        D_m, A_m, H_m = 10, 5, 15
+        db_sess = db_session.create_session()
+        key_id = db_sess.query(User).filter_by(user_id=self.user_id).first().id
+        heros = db_sess.query(User_Heros).filter_by(user_key=key_id).first()
+        abc = Character_show_lvl(heros, self.type_button)
+        character = Lvl_up[self.user_id]
+        print(character)
+        if character == 'sniper_up':
+            heros = abc.Lvl_Up_sniper()
+            message = Character_show_lvl(heros).show_lvl_Sniper()
+        elif character == 'solder_up':
+            heros = abc.Lvl_Up_solder()
+            message = Character_show_lvl(heros).show_lvl_Solder()
+        elif character == 'demoman_up':
+            heros = abc.Lvl_Up_demoman()
+            message = Character_show_lvl(heros).show_lvl_Demoman()
+        db_sess.add(heros)
+        db_sess.commit()
+        buttons = add_user_to_button(Damage, Health, Accuracy, Back, User_1=self.user_id)
+        Damage, Health, Accuracy, Back = buttons
+        keyboard = create_keyboard(Damage, Health, Accuracy, Back)
+        self.messages_edit(message=message, keyboard=keyboard)
 
     def person(self):
+        global Sniper_up, Solder_up, Demoman_up, Back
         """
         Открываем пользователю его персонажей
         """
-        Sniper_up['payload']['ids'], Solder_up['payload']['ids'], Demoman_up['payload']['ids'] = [self.user_id], [
-            self.user_id], [self.user_id]
+        buttons = add_user_to_button(Sniper_up, Solder_up, Demoman_up, Back, User_1=self.user_id)
+        Sniper_up, Solder_up, Demoman_up, Back = buttons
         keyboard = create_keyboard(Sniper_up, Solder_up, Demoman_up)
 
         db_sess = db_session.create_session()
@@ -467,7 +463,6 @@ class Commands:
     """
 
     def __init__(self, event_dict: dict):
-        print(event_dict)
         self.event_dict = event_dict
         self.peer_id: int = event_dict.get('peer_id')  # chat id
         self.user_id: int = event_dict.get('from_id')
@@ -569,10 +564,12 @@ class Commands:
             db_sess.close()
 
     def create_menu(self):
+        global Units, Stat
         db_sess = db_session.create_session()
         user = db_sess.query(User).filter_by(user_id=self.user_id).scalar()
         if user:
-            Units['payload']['ids'], Stat['payload']['ids'] = [self.user_id], [self.user_id]
+            buttons = add_user_to_button(Units, Stat, User_1=self.user_id)
+            Units, Stat = buttons
             keyboard = create_keyboard(Units, Stat)
             message = f'@id{self.user_id}(Меню)'
             self.sender(message=message, keyboard=keyboard)
@@ -659,7 +656,7 @@ class Bot:
 if __name__ == '__main__':
     from setting import setting as setting
 
-    token = setting['token']
+    token = setting['token_2']
     group_id = setting['group_id']
     Thread(target=Checker_time().pepe)
     bot = Bot(token, group_id)
