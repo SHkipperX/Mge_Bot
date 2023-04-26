@@ -1,4 +1,3 @@
-import os
 from vk_api import VkApi, VkUpload  # Vk_api
 from vk_api.bot_longpoll import VkBotEvent, VkBotLongPoll, VkBotEventType, VkBotMessageEvent
 from vk_api.keyboard import VkKeyboard
@@ -15,10 +14,12 @@ import time
 # Другое_2
 from orm_connector import db_session
 from orm_connector.__all_models import User, User_Heros, User_Stat
-from functions import create_keyboard, decoding_orm, Rock_Paper_Scissors, add_user_to_button, Character_show_lvl
+from functions import create_keyboard, decoding_orm, Rock_Paper_Scissors, add_user_to_button, Character_show_lvl, \
+    Cost_up, Get_stat
 from buttons__init__ import *
 from Mode_text import *
-from button import pop_up, sp_unccor, sp_corr, speech
+from button import pop_up, speech
+from Game.constants import RANKS
 
 # VK нужен для обращения к методам API через код
 # Upload для чего-то другого
@@ -38,8 +39,11 @@ def dump(param: str) -> json:
     """
     if param == 'notU':
         pop_up['text'] = choice(speech['ntubut'])
-    if param == 'wait':
+    elif param == 'wait':
         pop_up['text'] = choice(speech['wait'])
+    else:
+        pop_up['text'] = param
+
     return json.dumps(pop_up)
 
 
@@ -113,14 +117,14 @@ class Event_commands:
     """
 
     def __init__(self, event_dict: dict):
-        self.user_id: int = event_dict['user_id']
-        self.event_id: int = event_dict['event_id']
-        self.peer_id: int = event_dict['peer_id']
-        self.con_mes_id: int = event_dict['conversation_message_id']
-        self.payload: dict = event_dict['payload']
+        self.user_id: int = event_dict.get('user_id')
+        self.event_id: int = event_dict.get('event_id')
+        self.peer_id: int = event_dict.get('peer_id')
+        self.con_mes_id: int = event_dict.get('conversation_message_id')
+        self.payload: dict = event_dict.get('payload')
         squad: str = self.payload.get('squad')
-        self.holders_button: list = self.payload['ids']
-
+        self.holders_button: list = self.payload.get('ids')
+        print(self.payload)
         if (self.user_id in general_list) and (self.user_id in self.holders_button):
             if self.user_id in invite:
                 self.toss()
@@ -136,7 +140,7 @@ class Event_commands:
 
         elif squad == 'menu' and self.user_id in self.holders_button:
             Menu(type_button=self.payload['type'], user_id=self.user_id, conversation_message_id=self.con_mes_id,
-                 peer_id=self.peer_id)
+                 peer_id=self.peer_id, event_id=self.event_id)
         else:
             self.event_sender(dump(param='notU'))
 
@@ -152,8 +156,7 @@ class Event_commands:
 
                 preparation[id_1] = {'id': id_2, 'opt': None, 'time': date.now(), 'peer_id': self.peer_id}
                 preparation[id_2] = {'id': id_1, 'opt': None, 'time': date.now(), 'peer_id': self.peer_id}
-                buttons = add_user_to_button(Rock, Paper, Sciss, User_1=id_1, User_2=id_2)
-                Rock, Paper, Sciss = buttons
+                Rock, Paper, Sciss = add_user_to_button(Rock, Paper, Sciss, User_1=id_1, User_2=id_2)
                 keyboard = create_keyboard(Rock, Paper, Sciss)
                 self.messages_edit(message='Тут будет продолжение', keyboard=keyboard)
                 del invite[id_1], invite[id_2]
@@ -191,9 +194,6 @@ class Event_commands:
             id_1, opt_1, status_1 = user_1
             id_2, opt_2, status_2 = user_2
 
-            pick_character[id_1] = {'enemy_id': id_2, 'step': status_1}
-            pick_character[id_2] = {'enemy_id': id_1, 'step': status_2}
-
             user_name_1 = db_sess.query(User).filter_by(user_id=id_1).first().user_name
             user_name_2 = db_sess.query(User).filter_by(user_id=id_2).first().user_name
 
@@ -202,6 +202,8 @@ class Event_commands:
                 message = f'@id{id_1}({user_name_1}) Победил @id{id_2}({user_name_2})\n{opt_1} Vs {opt_2}'
                 self.messages_edit(message=message, keyboard=keyboard)
                 del preparation[id_1], preparation[id_2]
+                pick_character[id_1] = {'enemy_id': id_2, 'step': status_1, 'time': date.now(), 'peer_id': self.peer_id}
+                pick_character[id_2] = {'enemy_id': id_1, 'step': status_2, 'time': date.now(), 'peer_id': self.peer_id}
 
 
             elif status_1 is False:
@@ -209,6 +211,8 @@ class Event_commands:
                 message = f'@id{id_1}({user_name_1}) Проиграл @id{id_2}({user_name_2})\n{opt_1} Vs {opt_2}'
                 self.messages_edit(message=message, keyboard=keyboard)
                 del preparation[id_1], preparation[id_2]
+                pick_character[id_1] = {'enemy_id': id_2, 'step': status_1, 'time': date.now(), 'peer_id': self.peer_id}
+                pick_character[id_2] = {'enemy_id': id_1, 'step': status_2, 'time': date.now(), 'peer_id': self.peer_id}
 
 
             else:
@@ -246,9 +250,11 @@ class Event_commands:
 
         person: dict = decoding_orm(data_character, unit)[unit]
         d_lvl, h_lvl, a_lvl = person['d_lvl'], person['h_lvl'], person['a_lvl']
+        hp = Character_show_lvl(data_character, param=unit).get_health_point()
         game[self.user_id] = {'enemy_id': enemy_id, 'name': name, 'step': step, 'time': date.now(),
-                              'character': {'class': unit, 'd_lvl': d_lvl, 'h_lvl': h_lvl, 'a_lvl': a_lvl, 'hp': int}}
-
+                              'peer_id': self.peer_id,
+                              'character': {'class': unit, 'd_lvl': d_lvl, 'h_lvl': h_lvl, 'a_lvl': a_lvl, 'hp': hp}}
+        print(game)
         if self.user_id in game and enemy_id in game:
             enemy_unit = game[enemy_id]['character']['class']
             enemy_name = game[enemy_id]['name']
@@ -317,11 +323,12 @@ class Event_commands:
 
 
 class Menu:
-    def __init__(self, type_button: str, user_id: int, conversation_message_id: int, peer_id: int):
+    def __init__(self, type_button: str, user_id: int, conversation_message_id: int, event_id: int, peer_id: int):
         self.type_button = type_button
         self.user_id = user_id
         self.con_mes_id = conversation_message_id
         self.peer_id = peer_id
+        self.event_id = event_id
 
         if type_button == 'persons':
             self.person()
@@ -331,6 +338,8 @@ class Menu:
             self.show_Lvl()
         elif type_button in ('damage', 'health', 'accuracy'):
             self.character_up()
+        elif type_button in ('sniper_stat', 'solder_stat', 'demoman_stat'):
+            self.detailed_statistics()
         elif type_button == 'back':
             self.back()
 
@@ -339,7 +348,10 @@ class Menu:
         buttons = add_user_to_button(Units, Stat, User_1=self.user_id)
         Units, Stat = buttons
         keyboard = create_keyboard(Units, Stat)
-        message = f'@id{self.user_id}(Меню)'
+        message = f'@id{self.user_id}(Меню)\n' \
+                  f'*Улучшения Урона для 1lvl стоит {Cost_up.Damage}, послдедующее улучшение: lvl * {Cost_up.Damage}\n' \
+                  f'*Улучшения Здоровья для 1lvl стоит {Cost_up.Health}, послдедующее улучшение: lvl * {Cost_up.Health}\n' \
+                  f'*Улучшения Точности для 1lvl стоит {Cost_up.Accuracy}, послдедующее улучшение: lvl * {Cost_up.Accuracy}\n'
         self.messages_edit(message=message, keyboard=keyboard)
 
     def show_Lvl(self):
@@ -348,54 +360,63 @@ class Menu:
         key_id = db_sess.query(User).filter_by(user_id=self.user_id).first().id
         Unit_lvls = db_sess.query(User_Heros).filter_by(user_key=key_id).first()
         db_sess.close()
+
         if self.type_button == 'sniper_up':
             message = Character_show_lvl(Unit_lvls).show_lvl_Sniper()
         elif self.type_button == 'solder_up':
             message = Character_show_lvl(Unit_lvls).show_lvl_Solder()
-        elif self.type_button == 'solder_up':
+        elif self.type_button == 'demoman_up':
             message = Character_show_lvl(Unit_lvls).show_lvl_Demoman()
+        else:
+            message = "Неизвестная ошибка..."
 
         Lvl_up[self.user_id] = self.type_button
 
-        buttons = add_user_to_button(Damage, Health, Accuracy, Back, User_1=self.user_id)
-        Damage, Health, Accuracy, Back = buttons
-        keyboard = create_keyboard(Damage, Health, Accuracy)
+        Damage, Health, Accuracy, Back = add_user_to_button(Damage, Health, Accuracy, Back, User_1=self.user_id)
+        keyboard = create_keyboard(Damage, Health, Accuracy, Back)
         self.messages_edit(message=message, keyboard=keyboard)
 
     def character_up(self):
         global Damage, Health, Accuracy, Back
         # УРОН - 1-10лвл ТОЧНОСТЬ - 1-5лвл ЗДОРОВЬЕ - 1-15лвл
-        D_m, A_m, H_m = 10, 5, 15
+
         db_sess = db_session.create_session()
         key_id = db_sess.query(User).filter_by(user_id=self.user_id).first().id
         heros = db_sess.query(User_Heros).filter_by(user_key=key_id).first()
-        abc = Character_show_lvl(heros, self.type_button)
+
+        abc = Character_show_lvl(data_units=heros, param=self.type_button)
         character = Lvl_up[self.user_id]
-        print(character)
         if character == 'sniper_up':
-            heros = abc.Lvl_Up_sniper()
+            abc = abc.Lvl_Up_sniper()
             message = Character_show_lvl(heros).show_lvl_Sniper()
         elif character == 'solder_up':
-            heros = abc.Lvl_Up_solder()
+            abc = abc.Lvl_Up_solder()
             message = Character_show_lvl(heros).show_lvl_Solder()
         elif character == 'demoman_up':
-            heros = abc.Lvl_Up_demoman()
+            abc = abc.Lvl_Up_demoman()
             message = Character_show_lvl(heros).show_lvl_Demoman()
-        db_sess.add(heros)
-        db_sess.commit()
-        buttons = add_user_to_button(Damage, Health, Accuracy, Back, User_1=self.user_id)
-        Damage, Health, Accuracy, Back = buttons
+
+        text, heros = abc['text'], abc['data']
+
+        if text is None:
+            db_sess.add(heros)
+            db_sess.commit()
+        else:
+            self.event_sender(dump(text))
+        Damage, Health, Accuracy, Back = add_user_to_button(Damage, Health, Accuracy, Back, User_1=self.user_id)
         keyboard = create_keyboard(Damage, Health, Accuracy, Back)
         self.messages_edit(message=message, keyboard=keyboard)
+        db_sess.close()
 
     def person(self):
         global Sniper_up, Solder_up, Demoman_up, Back
         """
         Открываем пользователю его персонажей
         """
-        buttons = add_user_to_button(Sniper_up, Solder_up, Demoman_up, Back, User_1=self.user_id)
-        Sniper_up, Solder_up, Demoman_up, Back = buttons
-        keyboard = create_keyboard(Sniper_up, Solder_up, Demoman_up)
+        Sniper_up, Solder_up, Demoman_up, Back = add_user_to_button(Sniper_up, Solder_up, Demoman_up, Back,
+                                                                    User_1=self.user_id)
+
+        keyboard = create_keyboard(Sniper_up, Solder_up, Demoman_up, Back)
 
         db_sess = db_session.create_session()
         key_id = db_sess.query(User).filter_by(user_id=self.user_id).first().id
@@ -413,9 +434,11 @@ class Menu:
         self.messages_edit(message=message, keyboard=keyboard)
 
     def all_stat(self):
-        global Back
+        global Back, Sniper_stat, Solder_stat, Demoman_stat
         db_sess = db_session.create_session()
         user = db_sess.query(User).filter_by(user_id=self.user_id).first()
+        balance = db_sess.query(User_Heros).filter_by(user_key=user.id).first().credits
+        db_sess.close()
 
         name = user.user_name
         register = user.reg_date
@@ -423,23 +446,66 @@ class Menu:
         games = user.count_of_game
         wins = user.wins
         loses = user.loses
-        if wins != 0:
-            mes_win = f'Побед: {wins}({wins / games * 100:.2f}%)'
-        else:
-            mes_win = f'Побед: 0'
-        if loses != 0:
-            mes_lose = f'Поражений: {loses}({loses / games * 100:.2f}%)'
-        else:
-            mes_lose = f'Поражений: 0'
+        rank = None
 
-        message = f'Статистика @id{self.user_id}({name}) | {register}:\n' \
-                  f'Очки: {points} | Звание: ///\n' \
-                  f'Игры: {games}\n' \
+        for key in RANKS:
+            if RANKS[key] <= points:
+                rank = key
+        if rank is None:
+            rank = 'Отсутствует'
+
+        mes_win = f'Побед: {wins}({wins / games * 100:.2f}%)' if wins != 0 else 'Побед: 0'
+        mes_lose = f'Поражений: {loses}({loses / games * 100:.2f}%)' if loses != 0 else 'Поражений: 0'
+        message = f'Статистика @id{self.user_id}({name}) | Зарегистрирован: {register}:\n' \
+                  f'Очки: {points} | Звание: {rank}\n' \
+                  f'Игры: {games} | Кредиты: {balance}$\n' \
                   f'{mes_win} | {mes_lose}'
-        buttons = add_user_to_button(Back, User_1=self.user_id)
-        Back = buttons[0]
-        keyboard = create_keyboard(Back)
+
+        Sniper_stat, Solder_stat, Demoman_stat, Back = add_user_to_button(Sniper_stat, Solder_stat, Demoman_stat, Back,
+                                                                          User_1=self.user_id)
+        keyboard = create_keyboard(Sniper_stat, Solder_stat, Demoman_stat, Back)
         self.messages_edit(message=message, keyboard=keyboard)
+
+    def detailed_statistics(self):
+        global Back, Sniper_stat, Solder_stat, Demoman_stat
+        trs_class = {'sniper_stat': 'Снайпер', 'solder_stat': 'Солдат', 'demoman_stat': 'Подрывник'}
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).filter_by(user_id=self.user_id).first()
+        key_id = user.id
+        name = user.user_name
+        heros_stat = db_sess.query(User_Stat).filter_by(user_key=key_id).first()
+
+        if self.type_button == 'sniper_stat':
+            abc = Get_stat(data_unit_stat=heros_stat)
+            abc.Sniper_stat()
+            message = abc.get_message()
+
+        elif self.type_button == 'solder_stat':
+            abc = Get_stat(data_unit_stat=heros_stat)
+            abc.Solder_stat()
+            message = abc.get_message()
+        elif self.type_button == 'demoman_stat':
+            abc = Get_stat(data_unit_stat=heros_stat)
+            abc.Demoman_stat()
+            message = abc.get_message()
+
+        Sniper_stat, Solder_stat, Demoman_stat, Back = add_user_to_button(Sniper_stat, Solder_stat, Demoman_stat, Back,
+                                                                          User_1=self.user_id)
+        keyboard = create_keyboard(Sniper_stat, Solder_stat, Demoman_stat, Back)
+        message = message.replace('@id', f'@id{self.user_id}({name})')
+        message = message.replace('@class', trs_class[self.type_button])
+        self.messages_edit(message=message, keyboard=keyboard)
+
+    def event_sender(self, event_data: str) -> None:
+        """
+        //Эфемерное сообщение
+        Подробнее смотреть док-ю -> https://dev.vk.com/method/messages.sendMessageEventAnswer
+
+        :param event_data: (dict) Объект действия, которое должно произойти после нажатия на кнопку
+        :return:
+        """
+        post = {'peer_id': self.peer_id, 'user_id': self.user_id, 'event_id': self.event_id, 'event_data': event_data}
+        VK.messages.sendMessageEventAnswer(**post)
 
     def messages_edit(self, message: Optional[str], attachment: Optional[object] = None,
                       keyboard: Optional[VkKeyboard] = None) -> None:
@@ -471,11 +537,10 @@ class Commands:
         if event_dict.get('date'):
             self.date: object = date.utcfromtimestamp(event_dict.get('date'))  # дата сообщения
         self.reply: dict = event_dict.get('reply_message')
-        reply = self.reply
-        if reply:
-            self.reply_user: int = reply.get('from_id')
-            self.reply_message: str = reply.get('text')
-            self.reply_date: object = date.utcfromtimestamp(reply.get('date'))
+        if self.reply:
+            self.reply_user: int = self.reply.get('from_id')
+            self.reply_message: str = self.reply.get('text')
+            self.reply_date: object = date.utcfromtimestamp(self.reply.get('date'))
         try:
             self.reply_user = self.message.split()[1][3:12]
         except Exception:
@@ -571,7 +636,10 @@ class Commands:
             buttons = add_user_to_button(Units, Stat, User_1=self.user_id)
             Units, Stat = buttons
             keyboard = create_keyboard(Units, Stat)
-            message = f'@id{self.user_id}(Меню)'
+            message = f'@id{self.user_id}(Меню)\n' \
+                      f'*Улучшения Урона для 1lvl стоит {Cost_up.Damage}, послдедующее улучшение: lvl * {Cost_up.Damage}\n' \
+                      f'*Улучшения Здоровья для 1lvl стоит {Cost_up.Health}, послдедующее улучшение: lvl * {Cost_up.Health}\n' \
+                      f'*Улучшения Точности для 1lvl стоит {Cost_up.Accuracy}, послдедующее улучшение: lvl * {Cost_up.Accuracy}\n'
             self.sender(message=message, keyboard=keyboard)
 
         else:
@@ -585,8 +653,8 @@ class Commands:
         :return:
         """
         db_sess = db_session.create_session()
-        user = db_sess.query(User).filter_by(user_id=self.user_id).first()
-        user_2 = db_sess.query(User).filter_by(user_id=self.reply_user).first()
+        user = db_sess.query(User).filter_by(user_id=self.user_id).scalar()
+        user_2 = db_sess.query(User).filter_by(user_id=self.reply_user).scalar()
 
         if user and user_2:
             if user.user_id != user_2.user_id:
@@ -612,10 +680,14 @@ class Commands:
 
                     self.sender(message=text, keyboard=keyboard)
             else:
-                self.sender(message=f'Error: @id{user.user_id} == @id{user_2.user_id}')
-        else:
-            name = f'@id{self.reply_user}'
-            self.sender(message=speech['ntrg'][0].replace('@id', name))
+                message = choice(speech['==']).replace('@id', f'@id{self.reply_user}')
+                self.sender(message=message)
+        elif user:
+            message = f'@id{self.reply_user} no reg!'
+            self.sender(message=message)
+        elif user_2:
+            message = f'@id{self.user_id} no reg!'
+            self.sender(message=message)
         db_sess.close()
 
 
@@ -626,7 +698,7 @@ class Bot:
     """
 
     def __init__(self, Token: str, Page_id: str, App_id=6441755):
-        global VK, Upload, page_id
+        global VK, Upload
         page_id = Page_id
         self.Token = Token
         self.Page_id = Page_id

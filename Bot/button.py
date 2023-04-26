@@ -51,19 +51,19 @@ BUTTONS_SETTINGS: dict[str, dict] = {
                    'health': {'label': 'Здоровье', 'color': GREEN,
                               'payload': {'type': 'health', 'squad': 'menu', 'ids': []}},
                    'accuracy': {'label': 'Точность', 'color': WHITE,
-                                'payload': {'type': 'accuracy', 'squad': 'menu', 'ids': []}}}}
+                                'payload': {'type': 'accuracy', 'squad': 'menu', 'ids': []}}}},
+    'sniper_stat': {'label': 'Снайпер', 'color': RED,
+                    'payload': {'type': 'sniper_stat', 'squad': 'menu', 'ids': []}},
+    'solder_stat': {'label': 'Солдат', 'color': BLUE,
+                    'payload': {'type': 'solder_stat', 'squad': 'menu', 'ids': []}},
+    'demoman_stat': {'label': 'Подрывник', 'color': GREEN,
+                     'payload': {'type': 'demoman_stat', 'squad': 'menu', 'ids': []}}
 }
 
-sp_unccor = ['1', '2', '3', '4', '5', '6', '7', '8']
 pop_up = {"type": "show_snackbar", "text": None}
-
-sp_corr = ['1', '2', '3', '4', '5', '6', '7', '8']
-cus = {"type": "show_snackbar", "text": None}
 
 speech = {'inv': ['@id уже приглашён кем-то!', '@id ожидает своей битвы!', '@id всё ещё в раздумьях, подожди ещё!'],
           'ntubut': ['Это не твоя кнопочка!❏', 'не трогай меня ╱╸◠╺╲', 'Я могу и разочароваться в тебеت'],
           '==': ['@id с самим собой?〠', '@id, а-за-за, нельзя так ㋡', '@id, много умный играть против себя?'],
           'ntrg': ['@id ещё не регистрировался для участия в битвах', '@id, не находится в списках МГЕ...'],
           'wait': ['Ожидай ответа!']}
-
-

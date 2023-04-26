@@ -41,6 +41,7 @@ class User_Heros(SqlAlchemyBase):
     __tablename__ = 'User_Heros'
     id = sa.Column(sa.Integer, nullable=False, autoincrement=True, primary_key=True)
     user_key = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
+    credits = sa.Column(sa.Integer, nullable=False, default=0)
 
     sn_damage = sa.Column(sa.Integer, nullable=False, default=1)
     sn_health = sa.Column(sa.Integer, nullable=False, default=1)
@@ -55,6 +56,9 @@ class User_Heros(SqlAlchemyBase):
     so_accuracy = sa.Column(sa.Integer, nullable=False, default=1)
 
     user = orm.relationship('User')
+
+    def __repr__(self):
+        print(f'<{User_Heros.__class__.__name__}> ({self.id})<-Key={self.user_key}')
 
 
 class User_Stat(SqlAlchemyBase):
@@ -84,3 +88,6 @@ class User_Stat(SqlAlchemyBase):
     de_loses = sa.Column(sa.Integer, nullable=False, default=0)
 
     user = orm.relationship('User')
+
+    def __repr__(self):
+        print(f'<{User_Stat.__class__.__name__}> ({self.id})<-Key={self.user_key}')

@@ -13,3 +13,5 @@ Sniper_up = menu_set['units']['sniper']
 Solder_up = menu_set['units']['solder']
 Demoman_up = menu_set['units']['demoman']
 Damage, Health, Accuracy = menu_set['lvl_up']['damage'], menu_set['lvl_up']['health'], menu_set['lvl_up']['accuracy']
+
+Sniper_stat, Solder_stat, Demoman_stat = bs['sniper_stat'], bs['solder_stat'], bs['demoman_stat']
