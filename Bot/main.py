@@ -20,6 +20,7 @@ from functions import create_keyboard, decoding_orm, Rock_Paper_Scissors, add_us
 from buttons__init__ import *
 from button import speech, pop_up
 from Mode_text import *
+from Game.tools import rank_to_str
 from Game.constants import RANKS
 
 # VK нужен для обращения к методам API через код
@@ -548,20 +549,14 @@ class Menu:
         games = user.count_of_game
         wins = user.wins
         loses = user.loses
-        rank = None
-
-        for key in RANKS:
-            if RANKS[key] <= points:
-                rank = key
-        if rank is None:
-            rank = 'Отсутствует'
+        rank = rank_to_str(points, RANKS)
 
         mes_win = f'Побед: 「{wins}({wins / games * 100:.2f}%)」' if wins != 0 else 'Побед: 「0」'
         mes_lose = f'Поражений: 「{loses}({loses / games * 100:.2f}%)」' if loses != 0 else 'Поражений: 「0」'
 
         message = f'Статистика @id{self.user_id}({name})\n' \
                   f'Зарегистрирован на МГЕ: {register}:\n\n' \
-                  f'Очки: 「{points}」¦  Звание: {rank}\n' \
+                  f'Очки: 「{points}𝙋𝙏𝙎」¦  Звание: {rank}\n' \
                   f'Игры: 「{games}」¦ Кредиты: {balance}₭\n' \
                   f'{mes_win}¦ {mes_lose}'
 

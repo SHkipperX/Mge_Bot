@@ -76,7 +76,8 @@ class Character_show_lvl:
                   f'•Lvl урона: {sn_damage_lvl} | {damage:.1f}Ур\n' \
                   f'•Lvl здоровья: {sn_health_lvl} | {health:.1f}Hp\n' \
                   f'•Lvl точность: {sn_accuracy_lvl}\n' \
-                  f'Шанс попадания ／В Голову -> {Head:.1f}%／\n／В Тело -> {Body:.1f}%／'
+                  f'Шанс попадания:\n' \
+                  f'В Голову -> 〚{Head:.1f}%〛| В Тело -> 〚{Body:.1f}%〛'
         return message
 
     def show_lvl_Solder(self) -> str:
@@ -93,7 +94,7 @@ class Character_show_lvl:
                   f'•Lvl урона: {so_damage_lvl} | {damage:.1f}Ур.\n' \
                   f'•Lvl здоровья: {so_health_lvl} | {health:.1f}Hp\n' \
                   f'•Lvl точности: {so_accuracy_lvl}\n' \
-                  f'Шанс попадания -> ／{Body:.1f}%／'
+                  f'Шанс попадания -> 〚{Body:.1f}%〛'
         return message
 
     def show_lvl_Demoman(self) -> str:
@@ -110,7 +111,7 @@ class Character_show_lvl:
                   f'•Lvl урона: {de_damage_lvl} | {damage:.1f}Ур.\n' \
                   f'•Lvl здоровья: {de_health_lvl}| {health:.1f}Хп\n' \
                   f'•Lvl точности: {de_accuracy_lvl}\n' \
-                  f'Шанс попадания -> ／{Body:.1f}%／'
+                  f'Шанс попадания -> 〚{Body:.1f}%〛'
         return message
 
     def Lvl_Up_sniper(self) -> dict[str, User_Heros]:
