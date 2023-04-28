@@ -6,6 +6,7 @@ Rock, Paper, Sciss = bs['rock'], bs['paper'], bs['scissors']
 Sniper, Solder, Demoman = bs['sniper'], bs['solder'], bs['demoman']
 
 Body_Sh, Head_Sh, Move_R, Move_L = bs['body_shot'], bs['head_shot'], bs['move_R'], bs['move_L']
+shot_L, shot_R = bs['shot_L'], bs['shot_R']
 
 Units = bs['units']
 menu_set = bs['menu_setting']

@@ -21,7 +21,8 @@ from buttons__init__ import *
 from button import speech, pop_up
 from Mode_text import *
 from Game.tools import rank_to_str
-from Game.constants import RANKS
+from Game.player import Player
+from Game.constants import RANKS, SIDE_LEFT, SIDE_RIGHT
 
 # VK нужен для обращения к методам API через код
 # Upload для чего-то другого
@@ -296,12 +297,27 @@ class Event_Commands:
             id_1, opt_1, status_1 = user_1
             id_2, opt_2, status_2 = user_2
 
-            user_name_1 = db_sess.query(User).filter_by(user_id=id_1).first().user_name
-            user_name_2 = db_sess.query(User).filter_by(user_id=id_2).first().user_name
+            user_1 = db_sess.query(User).filter_by(user_id=id_1).first()
+            user_2 = db_sess.query(User).filter_by(user_id=id_2).first()
+            user_name_1 = user_1.user_name
+            user_name_2 = user_2.user_name
+
+            heros1 = db_sess.query(User_Heros).filter_by(user_key=user_1.id).first()
+            heros2 = db_sess.query(User_Heros).filter_by(user_key=user_2.id).first()
+            sum_lvl_sniper1, sum_lvl_solder1, sum_lvl_demoman1 = Character_show_lvl.show_sum_lvl(heros1)
+            sum_lvl_sniper2, sum_lvl_solder2, sum_lvl_demoman2 = Character_show_lvl.show_sum_lvl(heros2)
+
+            message = f'Суммарный уровень @id{id_1}({user_name_1}):\n' \
+                      f'●Снайпер {sum_lvl_sniper1}lvl\n' \
+                      f'🚀Солдат {sum_lvl_solder1}lvl\n' \
+                      f'🔥Подрывник {sum_lvl_demoman1}lvl\n' \
+                      f'Суммарный уровень @id{id_2}({user_name_2}):\n' \
+                      f'●Снайпер {sum_lvl_sniper2}lvl\n' \
+                      f'🚀Солдат {sum_lvl_solder2}lvl\n' \
+                      f'🔥Подрывник {sum_lvl_demoman2}lvl'
 
             if status_1:
                 """id_1 победил, id_2 проиграл"""
-                message = f'@id{id_1}({user_name_1}) Победил @id{id_2}({user_name_2})\n{opt_1} Vs {opt_2}'
                 self.messages_edit(message=message, keyboard=keyboard)
                 del preparation[id_1], preparation[id_2]
                 pick_character[id_1] = {'enemy_id': id_2, 'step': status_1, 'time': date.now(), 'peer_id': self.peer_id}
@@ -310,7 +326,7 @@ class Event_Commands:
 
             elif status_1 is False:
                 """id_1 проиграл, id_2 победил"""
-                message = f'@id{id_1}({user_name_1}) Проиграл @id{id_2}({user_name_2})\n{opt_1} Vs {opt_2}'
+
                 self.messages_edit(message=message, keyboard=keyboard)
                 del preparation[id_1], preparation[id_2]
                 pick_character[id_1] = {'enemy_id': id_2, 'step': status_1, 'time': date.now(), 'peer_id': self.peer_id}
@@ -333,7 +349,7 @@ class Event_Commands:
             self.messages_edit(message=message, keyboard=keyboard)
 
     def character_selection(self) -> None:
-        global Move_L, Head_Sh, Body_Sh, Move_R
+        global shot_R, shot_L, Move_L, Head_Sh, Body_Sh, Move_R
         """
         //выбор Персонажей
         :return:
@@ -354,51 +370,110 @@ class Event_Commands:
         person: dict = decoding_orm(data_character, unit)[unit]
         d_lvl, a_lvl = person['d_lvl'], person['a_lvl']
         hp = Character_show_lvl(data_character, param=unit).get_health_point()
+        player = Player(_class=unit, d_lvl=d_lvl, a_lvl=a_lvl, hp=hp)
         game[self.user_id] = {'enemy_id': enemy_id, 'name': name, 'step': step, 'time': date.now(),
-                              'peer_id': self.peer_id,
-                              'character': {'class': unit, 'd_lvl': d_lvl, 'a_lvl': a_lvl, 'hp': hp}}
+                              'peer_id': self.peer_id, 'class': unit, 'obj_Player': player, 'move': None,
+                              'target': None, 'line_shot': None}
+
 
         if self.user_id in game and enemy_id in game:
-            enemy_unit = game[enemy_id]['character']['class']
+            enemy_unit = game[enemy_id]['class']
             enemy_name = game[enemy_id]['name']
             if step:  # если право выстрела у нажавшего кнопу полседним
+
                 if unit == 'sniper':
-                    buttons = add_user_to_button(Move_L, Head_Sh, Body_Sh, Move_R, User_1=self.user_id)
-                    Move_L, Head_Sh, Body_Sh, Move_R = buttons
-                    keyboard = create_keyboard(Move_L, Head_Sh, Body_Sh, Move_R)
+                    shot_L, Head_Sh, Body_Sh, shot_R = add_user_to_button(shot_L, Head_Sh, Body_Sh, shot_R,
+                                                                          User_1=self.user_id)
+                    keyboard = create_keyboard(shot_L, Head_Sh, Body_Sh, shot_R)
                 else:
-                    buttons = add_user_to_button(Move_L, Body_Sh, Move_R, User_1=self.user_id)
-                    Move_L, Body_Sh, Move_R = buttons
-                    keyboard = create_keyboard(Move_L, Body_Sh, Move_R)
+                    shot_L, Body_Sh, shot_R = add_user_to_button(shot_L, Body_Sh, shot_R, User_1=self.user_id)
+                    keyboard = create_keyboard(shot_L, Body_Sh, shot_R)
+
                 message = f'Первым стрелять будет @id{self.user_id}({name}) по @id{enemy_id}({enemy_name})'
-                self.messages_edit(message=message, keyboard=keyboard)
 
             else:  # иначе у другого
                 if enemy_unit == 'sniper':
-                    buttons = add_user_to_button(Move_L, Head_Sh, Body_Sh, Move_R, User_1=enemy_id)
-                    Move_L, Head_Sh, Body_Sh, Move_R = buttons
-                    keyboard = create_keyboard(Move_L, Head_Sh, Body_Sh, Move_R)
+                    shot_L, Head_Sh, Body_Sh, shot_R = add_user_to_button(shot_L, Head_Sh, Body_Sh, shot_R,
+                                                                          User_1=enemy_id)
+                    keyboard = create_keyboard(shot_L, Head_Sh, Body_Sh, shot_R)
                 else:
-                    buttons = add_user_to_button(Move_L, Body_Sh, Move_R, User_1=enemy_id)
-                    Move_L, Body_Sh, Move_R = buttons
-                    keyboard = create_keyboard(Move_L, Body_Sh, Move_R)
+                    shot_L, Body_Sh, shot_R = add_user_to_button(shot_L, Body_Sh, shot_R, User_1=enemy_id)
+                    keyboard = create_keyboard(shot_L, Body_Sh, shot_R)
+
                 message = f'Первым стрелять будет @id{enemy_id}({enemy_name}) по @id{self.user_id}({name})'
-                self.messages_edit(message=message, keyboard=keyboard)
+
+            self.messages_edit(message=message, keyboard=keyboard)
             del pick_character[self.user_id], pick_character[enemy_id]
 
     def mge_pvp(self):
+        global shot_L, Move_L, Head_Sh, Body_Sh, Move_R, shot_R
         """
         PvP 2 игроков
         """
-        data_Unit = game[self.user_id]['character']
-        d_lvl, h_lvl, a_lvl = data_Unit['d_lvl'], data_Unit['h_lvl'], data_Unit['a_lvl']
-        unit = data_Unit['class']
+        target = game[self.user_id]['target']
+        shot = game[self.user_id]['line_shot']
+        moving = game[self.user_id]['move']
+        type_button = self.payload['type']
+        char = game[self.user_id]['character']['class']
 
-        enemy_id = game[self.user_id]['enemy_id']
-        Hp_enemy = game[enemy_id]['character']['hp']
+        if target is None and type_button in ('bd_sh', 'hd_sh'):
+            """Выбор куда стрелять: Голова, тело"""
+            game[self.user_id]['target'] = type_button
 
-        game[self.user_id]['step'] = False
-        game[enemy_id]['step'] = True
+        elif shot is None and type_button in ('shot_l', 'shot_r'):
+            """Выбор куда стрелять: Лево, Право"""
+            game[self.user_id]['line_shot'] = type_button
+
+        elif moving is None and type_button in ('move_l', 'move_r'):
+            """Выбор куда увернуться"""
+            game[self.user_id]['move'] = type_button
+
+        target = game[self.user_id]['target']
+        shot = game[self.user_id]['line_shot']
+        moving = game[self.user_id]['move']
+        id_2 = game[self.user_id]['enemy_id']
+
+        if target and shot:
+            Move_L, Move_R = add_user_to_button(Move_L, Move_R, User_1=id_2)
+            keyboard = create_keyboard(Move_L, Move_R)
+            message = f'@id{id_2} Уворачивайся'
+            self.messages_edit(message=message, keyboard=keyboard)
+            return
+
+        elif moving:
+            """Подведение итогов Выстрел-Уклонение"""
+            player_1: Player = game[self.user_id]['obj_Player']
+            player_2: Player = game[id_2]['obj_Player']
+
+            player_2.step(moving)
+            print(player_1.hit(player_2, shot, target))
+
+            print(player_2.health)
+            print(player_1.health.health)
+            # итог
+            # итог
+            # итог
+
+            game[self.user_id]['step'] = True
+            game[id_2]['step'] = False
+            game[self.user_id]['target'] = None
+            game[id_2]['target'] = None
+            game[self.user_id]['line_shot'] = None
+            game[id_2]['line_shot'] = None
+            game[self.user_id]['move'] = None
+            game[id_2]['move'] = None
+            game[self.user_id]['time'] = date.now()
+            game[id_2]['time'] = date.now()
+
+            if char == 'sniper':
+                shot_L, Head_Sh, Body_Sh, shot_R = add_user_to_button(shot_L, Head_Sh, Body_Sh, shot_R,
+                                                                      User_1=self.user_id)
+                keyboard = create_keyboard(shot_L, Head_Sh, Body_Sh, shot_R)
+            else:
+                shot_L, Body_Sh, shot_R = add_user_to_button(shot_L, Body_Sh, shot_R, User_1=self.user_id)
+                keyboard = create_keyboard(shot_L, Body_Sh, shot_R)
+            message = f'@id{self.user_id} твой черёд'
+            self.messages_edit(message=message, keyboard=keyboard)
 
     def event_sender(self, event_data: str) -> None:
         """
@@ -627,7 +702,7 @@ class Checker_time:
     """
 
     def __init__(self):
-        self.wait = delta(minutes=0, seconds=2)
+        self.wait = delta(minutes=1, seconds=2)
 
     def delete(self, data: dict, name: str):
         """
@@ -690,7 +765,7 @@ class Checker_time:
                         self.delete(pick_character[id], 'game')
 
             except Exception as error:
-                print(Text_Warning, error, M_0)
+                pass
 
 
 class Bot:

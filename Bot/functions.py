@@ -60,6 +60,14 @@ class Character_show_lvl:
         self.balance = self.data.credits
         self.param = param
 
+    @staticmethod
+    def show_sum_lvl(dt: User_Heros):
+        sn_lvl = dt.sn_damage + dt.sn_health + dt.sn_accuracy
+        so_lvl = dt.so_damage + dt.so_health + dt.so_accuracy
+        de_lvl = dt.de_damage + dt.de_health + dt.de_accuracy
+        return sn_lvl, so_lvl, de_lvl
+
+
     def show_lvl_Sniper(self) -> str:
         sn_damage_lvl = self.data.sn_damage
         sn_health_lvl = self.data.sn_health
