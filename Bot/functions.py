@@ -67,7 +67,6 @@ class Character_show_lvl:
         de_lvl = dt.de_damage + dt.de_health + dt.de_accuracy
         return sn_lvl, so_lvl, de_lvl
 
-
     def show_lvl_Sniper(self) -> str:
         sn_damage_lvl = self.data.sn_damage
         sn_health_lvl = self.data.sn_health
@@ -146,7 +145,7 @@ class Character_show_lvl:
                 text = f'Достигнут максимальный уровень: {Const_hp}lvl!'
             elif cost > self.balance:
                 text = f'Текущих средств недостаточно для улучшения здоровья.\n' \
-                       f' Не хватает ещё {cost - self.balance} из {cost}!'
+                       f'Не хватает ещё {cost - self.balance} из {cost}!'
 
         elif self.param == 'accuracy':
             lvl_accuracy = self.data.sn_accuracy
@@ -300,6 +299,45 @@ class Get_stat:
                   f'Побед: 「{self.wins} ({prc_wins})」| Поражений: 「{self.loses} ({prc_loses})」'
 
         return message
+
+
+class Update_stat:
+    def __init__(self, data_unit_stat: User_Stat, _class: str, **kwargs):
+        self.data = data_unit_stat
+        self.damage = kwargs['damage']
+        self.games = kwargs['games']
+        self.shots = kwargs['shots']
+        self.hits = kwargs['hits']
+        self.wins = kwargs['wins']
+        self.loses = kwargs['loses']
+
+
+    def Update_sniper(self):
+        self.data.sn_damage = self.damage
+        self.data.sn_games = self.games
+        self.data.sn_shot = self.shots
+        self.data.sn_hits = self.hits
+        self.data.sn_wins = self.wins
+        self.data.sn_loses = self.loses
+        return self.data
+
+    def Update_solder(self):
+        self.data.so_damage = self.damage
+        self.data.so_games = self.games
+        self.data.so_shot = self.shots
+        self.data.so_hits = self.hits
+        self.data.so_wins = self.wins
+        self.data.so_loses = self.loses
+        return self.data
+
+    def Update_demoman(self):
+        self.data.de_damage = self.damage
+        self.data.de_games = self.games
+        self.data.de_shot = self.shots
+        self.data.de_hits = self.hits
+        self.data.de_wins = self.wins
+        self.data.de_loses = self.loses
+        return self.data
 
 
 def decoding_orm(user_object: object, character: str) -> dict:
