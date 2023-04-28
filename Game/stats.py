@@ -3,23 +3,28 @@ from typing import Optional, Tuple, Union
 
 from random import random, triangular
 
+from constants import SIDE_NONE, SIDE_LEFT, SIDE_RIGHT
+
 
 class Side:
-    def __init__(self, side: str = None):
+    def __init__(self, side: str = SIDE_NONE):
         self._side: str = side
 
-    @property
-    def side(self) -> str:
+    def side_get(self) -> str:
         return self._side
 
-    @side.setter
-    def side(self, value: str):
+    def side_set(self, value: str):
         self._side = value
 
-    def __eq__(self, other) -> bool:
+    def side_del(self):
+        self._side = SIDE_NONE
+
+    side = property(side_get, side_set, side_del)
+
+    def __eq__(self, other: Side) -> bool:
         return self._side == other.side
 
-    def __ne__(self, other) -> bool:
+    def __ne__(self, other: Side) -> bool:
         return self._side != other.side
 
 
@@ -42,6 +47,10 @@ class CurDamage:
 
     def __str__(self) -> str:
         return str(self.damage)
+
+    @damage.setter
+    def damage(self, value):
+        self._cur_damage = value
 
 
 class BaseStat:
@@ -83,6 +92,12 @@ class BaseStat:
     @property
     def value(self) -> int:
         return self._value
+
+    def __add__(self, value: int):
+        self._value += value
+
+    def __sub__(self, value: int):
+        self._value -= value
 
 
 class Splash:
@@ -158,3 +173,7 @@ class Health(BaseStat):
     @property
     def health(self) -> int:
         return self._value
+
+    @health.setter
+    def health(self, value: int):
+        self._value = value

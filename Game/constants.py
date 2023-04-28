@@ -46,6 +46,11 @@ DEMOMAN_STATS: Dict[str, Union[Union[float, int], Tuple[float, float]]] = {
     'percent_health': 15
 }
 
+SNIPER = 'sniper'
+SOLDIER = 'soldier'
+DEMOMAN = 'demoman'
+
 # Steps
 SIDE_LEFT: str = '_left_'
 SIDE_RIGHT: str = '_right_'
+SIDE_NONE: str = '_none_side_'

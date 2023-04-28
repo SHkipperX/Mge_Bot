@@ -25,9 +25,11 @@ class BaseCharacter:
 
         self._current_damage = CurDamage()
 
-    def hit(self, *args):
+    def hit(self, *args) -> bool:
         if self.accuracy.chance_body():
             self.cur_damage.add_damage(self.damage.damage)
+            return True
+        return False
 
     def hit_splash(self):
         self.cur_damage.add_damage(int(self.damage.damage * self._splash.splash()))
@@ -42,13 +44,22 @@ class BaseCharacter:
         self.health.level_up(count_level)
 
     def set_cur_damage(self, damage: int):
-        self._current_damage = damage
+        self._current_damage.damage = damage
 
     def add_cur_damage(self, damage: int):
-        self._current_damage += damage
+        self._current_damage.damage += damage
 
     def sub_cur_damage(self, damage: int):
-        self._current_damage -= damage
+        self._current_damage.damage -= damage
+
+    def add_health(self, health: int):
+        self.health.health += health
+
+    def sub_health(self, health: int):
+        self.health -= health
+
+    def set_health(self, health: int = 0):
+        self.health = health
 
     def get_and_nullify_damage(self) -> int:
         res = self.cur_damage.damage
@@ -89,10 +100,12 @@ class Sniper(BaseCharacter):
         :param target: Цель: body; head
         """
         if target == TARGET_BODY:
-            BaseCharacter.hit(self)
+            return BaseCharacter.hit(self)
         elif target == TARGET_HEAD:
             if self.accuracy.chance_head():
                 self.cur_damage.add_damage(self.damage.damage * 2)
+                return True
+        return False
 
 
 class Soldier(BaseCharacter):

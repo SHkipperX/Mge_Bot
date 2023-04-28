@@ -1,59 +1,88 @@
 from typing import Union
 
 from characters import Sniper, Demoman, Soldier, TARGET_BODY, TARGET_HEAD, BaseCharacter
-from constants import RANKS, SIDE_LEFT, SIDE_RIGHT
-from tools import rank_to_str, is_rank
+from constants import SIDE_LEFT, SIDE_RIGHT, SIDE_NONE
+from stats import Side
 
 
 class Player:
-    _side: str
+    _side: Side = Side()
 
-    def __init__(self, hero: str, _id: int, rank: Union[int, str], l_damage: int = 0, l_accuracy: int = 0,
-                 l_health: int = 0, ):
+    def __init__(self, hero: str, l_damage: int = 0, l_accuracy: int = 0,
+                 health: int = 0):
         """
         :param l_damage: Уровень урона
         :param l_accuracy: Уровень точности
-        :param l_health: Уровень HP
+        :param health: Уровень HP
         :param hero: Имя героя: soldier; sniper; любой другой текст: demoman
-        :param _id: Идентификатор пользователя
-        :param rank: Очки или имя ранга
         """
 
-        self._user_id = _id
-        self._rank = rank if type(rank) == str and is_rank(rank, RANKS) else rank_to_str(rank, RANKS) if type(
-            rank) == int else 'Unknown'  # Возможно уберётся
         self._hero = Sniper() if hero == 'sniper' else Soldier() if hero == 'soldier' else Demoman()
 
         self._hero.level_up_damage(count_level=l_damage)
-        self._hero.level_up_health(count_level=l_health)
+        self._hero.health.health = health
         self._hero.level_up_accuracy(count_level=l_accuracy)
 
-    def step_left(self):
-        self._side = SIDE_LEFT
+    def step(self, side: str = SIDE_NONE):
+        self._side.side = side
 
-    def step_right(self):
-        self._side = SIDE_RIGHT
+    def hit(self, player, target: str = TARGET_BODY) -> int:
+        """
+        При любом уроне срезает хапэшки у передаваемого в аргумент игрока
 
-    def hit(self, target: str = TARGET_BODY):
-        pass
+        :param player: Объект класса Player
+        :param target: Цель (только для снайпера)
+        :return: Нанесённый урон
+        """
+        damage = 0
+
+        if isinstance(self._hero, Sniper):
+            if self._hero.hit(target):
+                if self._side == player._side:
+                    damage = self._hero.get_and_nullify_damage()
+                    player.hero.health.health -= damage
+                else:
+                    self._hero.get_and_nullify_damage()
+                    if self._hero.hit(target):
+                        damage = self._hero.get_and_nullify_damage()
+                        player.hero.health.health -= damage
+        elif isinstance(self._hero, (Soldier, Demoman)):
+            if self._hero.hit():
+                if self._side == player._side:
+                    damage = self._hero.get_and_nullify_damage()
+                    player.hero.health.health -= damage
+                else:
+                    self._hero.get_and_nullify_damage()
+                    if self._hero.hit():
+                        damage = self._hero.get_and_nullify_damage()
+                        player.hero.health.health -= damage
+            else:
+                self._hero.hit_splash()
+                damage = self._hero.get_and_nullify_damage()
+                player.hero.health.health -= damage
+
+        return damage
 
     @property
     def side(self) -> str:
-        return self._side
+        return self._side.side
 
-    @property
-    def rank(self) -> str:
-        return self._rank
+    @side.setter
+    def side(self, value: str):
+        self.step(value)
 
     @property
     def hero(self) -> BaseCharacter:
         return self._hero
 
-
-def hit_enemy(player: Player):
-    pass
+    @property
+    def health(self):
+        return self.hero.health
 
 
 # testing
 if __name__ == '__main__':
-    player_sn = Player('sniper', 231687, 400)
+    player1 = Player('sniper', 100, 100, health=80)
+    player2 = Player('demoman', 100, 100, health=100)
+    print(f"player_1: {player1.__dict__.get('_hero').__dict__.get('accuracy').__dict__}")
+    print(f"player_2: {player2.__dict__.get('_hero').__dict__}")
