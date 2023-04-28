@@ -9,22 +9,25 @@ from traceback import format_exc
 from datetime import datetime as date
 from datetime import timedelta as delta
 from threading import Thread
+import requests
 import json
 import time
 # Другое_2
 from orm_connector import db_session
 from orm_connector.__all_models import User, User_Heros, User_Stat
 from functions import create_keyboard, decoding_orm, Rock_Paper_Scissors, add_user_to_button, Character_show_lvl, \
-    Cost_up, Get_stat
+    Cost_up, Get_stat, dump
 from buttons__init__ import *
+from button import speech, pop_up
 from Mode_text import *
-from button import pop_up, speech
+from Game.tools import rank_to_str
 from Game.constants import RANKS
 
 # VK нужен для обращения к методам API через код
 # Upload для чего-то другого
 VK = None
-Upload = None
+Upload: VkUpload = None
+Route = "data/meme/"
 invite: dict[int, dict] = dict()
 preparation: dict = dict()
 pick_character: dict = dict()
@@ -33,85 +36,184 @@ Lvl_up: dict = dict()
 general_list = list()
 
 
-def dump(param: str) -> json:
+class Text_Commands:
     """
-    :return:
-    """
-    if param == 'notU':
-        pop_up['text'] = choice(speech['ntubut'])
-    elif param == 'wait':
-        pop_up['text'] = choice(speech['wait'])
-    else:
-        pop_up['text'] = param
+    Обраотчик текстовых команд
 
-    return json.dumps(pop_up)
-
-
-class Checker_time:
-    """
-    Doc
     """
 
-    def __init__(self):
-        self.wait = delta(minutes=1, seconds=30)
+    def __init__(self, event_dict: dict):
+        self.event_dict = event_dict
+        self.peer_id: int = event_dict.get('peer_id')  # chat id
+        self.user_id: int = event_dict.get('from_id')
+        self.reply_user = None  # то же что и user_id для 2 человека
+        self.message: str = event_dict.get('text').lower()
+        if event_dict.get('date'):
+            self.date: object = date.utcfromtimestamp(event_dict.get('date'))  # дата сообщения
+        self.reply: dict = event_dict.get('reply_message')
+        if self.reply:
+            self.reply_user: int = self.reply.get('from_id')
+            self.reply_message: str = self.reply.get('text')
+            self.reply_date: object = date.utcfromtimestamp(self.reply.get('date'))
+        try:
+            self.reply_user = self.message.split()[1][3:12]
+        except Exception:
+            pass
 
-    def delete(self, data: dict, name: str):
+        self.command_handler()
+
+    def sender(self, message: Optional[str] = None, keyboard: Optional[object] = None,
+               attachment: Optional[object] = None) -> None:
         """
-        очистка словарей от просроченных пользователей
+        Отправка сообщения в беседу
+        :param message: (str) отправляемый текст
+        :param keyboard: (VkKeyBoard) клавиатура к сообщению
+        :param attachments: (object) фото/аудио фаил (паблик не может отправлять видео фаилы)
+        :return:
         """
-        start_time = data['time']
-        peer_id = data['peer_id']
-        id_1 = data['id']
-        id_2 = None
-
-        if start_time + self.wait < date.now():
-
-            if name == 'invite':
-                id_2 = invite[id_1]['id']
-                del invite[id_1], invite[id_2]
-            elif name == 'preparation':
-                id_2 = preparation[id_1]['id']
-                del preparation[id_1], preparation[id_2]
-            elif name == 'game':
-                id_2 = preparation[id_1]['id']
-                del game[id_1], game[id_2]
-
-            index_1 = general_list.index(id_1)
-            del general_list[index_1]
-            index_2 = general_list.index(id_2)
-            del general_list[index_2]
-
-            self.sender(peer_id=peer_id, message='Error Time')
-
-    def sender(self, peer_id: int, message: str) -> None:
-        post = {'peer_id': peer_id, 'chat_id': 100000000, 'message': message,
+        post = {'peer_id': self.peer_id, 'chat_id': 100000000, 'message': message, 'keyboard': keyboard,
+                'attachment': attachment, 'sticker_id': None, 'peer_ids': self.peer_id,
                 'random_id': get_random_id()}
         VK.messages.send(**post)
 
-    def pepe(self):
+    def command_handler(self) -> None:
         """
-        Функция ищет просроченное время и удаляет пользователя из игры
         :return:
         """
+        if self.message.split()[0] == 'mge':
+            self.invitation_to_the_mge()
+            if self.reply_user:
+                """Вызов определённого пользователя на дуэль"""
+                pass
+            else:
+                """Вызов рандомного пользователя на дуэль"""
+                pass
 
-        while True:
-            time.sleep(1)
-            try:
-                if invite:
-                    for id in invite:
-                        self.delete(invite[id], 'invite')
-                if preparation:
-                    for id in preparation:
-                        self.delete(preparation[id], 'preparation')
-                if game:
-                    for id in game:
-                        self.delete(game[id], 'game')
+        elif self.message == 'reg':
+            self.register()
 
-            except Exception as error:
-                print(Text_Warning, error, M_0)
+        elif self.message.split()[0] == 'name':
+            """Смена ника"""
+            self.new_nickname()
+
+        elif self.message == 'menu':
+            self.create_menu()
+        elif self.message == 'meme':
+            self.meme_image()
+
+    def meme_image(self, file_name='unknown2.png'):
+        photo = Upload.photo_messages(Route + file_name)[0]
+        owner_id = photo['owner_id']
+        media_id = photo['id']
+        attachment = f'photo{owner_id}_{media_id}'
+        self.sender(attachment=attachment)
+
+    def new_nickname(self) -> None:
+        """
+        Смена имени в database
+        :return None:
+        """
+        nickname = (' ').join(self.event_dict['text'].split()[1:])
+        result = f'Error: {len(nickname)} < 16 символов'
+        if len(nickname) <= 16:
+            db_sess = db_session.create_session()
+            db_sess.query(User).filter_by(user_id=self.user_id).update({'user_name': nickname})
+            db_sess.commit()
+            result = 'complete'
+        self.sender(message=f'{result}: {nickname}')
+
+    def register(self) -> None:
+        """
+        Добавление пользователя в базу данных
+        """
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).filter_by(user_id=self.user_id).scalar()
+
+        if not user:
+            user = User()
+
+            user.user_id = self.user_id
+            user.user_name = 'участник'
+            db_sess.add(user)
+            db_sess.commit()
+
+            hero = User_Heros(user_key=user.id)
+            stats = User_Stat(user_key=user.id)
+            db_sess.add(hero)
+            db_sess.commit()
+            db_sess.add(stats)
+            db_sess.commit()
+
+            self.sender(message=f'@id{self.user_id}(USER) Зарегестрирован на участие в МГЕ схватках!')
+        else:
+            self.sender(message=f'@id{self.user_id}(USER), ты, регистрировался уже!')
+
+        db_sess.close()
+
+    def create_menu(self):
+        global Units, Stat
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).filter_by(user_id=self.user_id).scalar()
+        db_sess.close()
+        if user:
+            buttons = add_user_to_button(Units, Stat, User_1=self.user_id)
+            Units, Stat = buttons
+            keyboard = create_keyboard(Units, Stat)
+            message = f'@id{self.user_id}(Меню)\n' \
+                      f'•Улучшения Урона для 1lvl стоит {Cost_up.Damage}, послдедующее улучшение: lvl * {Cost_up.Damage}\n' \
+                      f'•Улучшения Здоровья для 1lvl стоит {Cost_up.Health}, послдедующее улучшение: lvl * {Cost_up.Health}\n' \
+                      f'•Улучшения Точности для 1lvl стоит {Cost_up.Accuracy}, послдедующее улучшение: lvl * {Cost_up.Accuracy}\n'
+            self.sender(message=message, keyboard=keyboard)
+
+        else:
+            message = f'@id{self.user_id}, не зарегистрирован!'
+            self.sender(message=message)
+
+    def invitation_to_the_mge(self) -> None:
+        """
+        Приглашение пользователя на дуэль
+        :return:
+        """
+        db_sess = db_session.create_session()
+        user = db_sess.query(User).filter_by(user_id=self.user_id).scalar()
+        user_2 = db_sess.query(User).filter_by(user_id=self.reply_user).scalar()
+
+        if user and user_2:
+            if user.user_id != user_2.user_id:
+                id_1: int = user.user_id
+                name: str = user.user_name
+
+                id_2: int = user_2.user_id
+                name_2: str = user_2.user_name
+
+                if id_1 in invite:
+                    self.sender(message=f'Error: @id{id_1} is invited')
+                elif id_2 in invite:
+                    self.sender(message=f'Error: @id{id_2} is invited')
+                else:
+                    text = f'@id{id_1}({name_2.title()}), Вас вызывает на дуэль господин @id{id_2}({name.title()})'
+                    Accept['payload']['ids'] = [id_1, id_2]
+                    Deny['payload']['ids'] = [id_1, id_2]
+                    general_list.append(id_1), general_list.append(id_2)
+
+                    keyboard = create_keyboard(Accept, Deny)
+                    invite[id_1] = {'id': id_2, 'bool': False, 'time': date.now(), 'peer_id': self.peer_id}
+                    invite[id_2] = {'id': id_1, 'bool': True, 'time': date.now(), 'peer_id': self.peer_id}
+
+                    self.sender(message=text, keyboard=keyboard)
+            else:
+                message = choice(speech['==']).replace('@id', f'@id{self.reply_user}')
+                self.sender(message=message)
+        elif user:
+            message = f'@id{self.reply_user} no reg!'
+            self.sender(message=message)
+        elif user_2:
+            message = f'@id{self.user_id} no reg!'
+            self.sender(message=message)
+        db_sess.close()
 
 
-class Event_commands:
+class Event_Commands:
     """
     Doc
     """
@@ -124,8 +226,8 @@ class Event_commands:
         self.payload: dict = event_dict.get('payload')
         squad: str = self.payload.get('squad')
         self.holders_button: list = self.payload.get('ids')
-        print(self.payload)
-        if (self.user_id in general_list) and (self.user_id in self.holders_button):
+
+        if (self.user_id in general_list) and (self.user_id in self.holders_button) and squad != 'menu':
             if self.user_id in invite:
                 self.toss()
 
@@ -241,6 +343,7 @@ class Event_commands:
         key_id = data_user_1.id
         name = data_user_1.user_name
         data_character = db_sess.query(User_Heros).filter_by(user_key=key_id).first()
+        db_sess.close()
 
         """Инициализация персонажа"""
         step: bool = pick_character[self.user_id]['step']
@@ -249,12 +352,12 @@ class Event_commands:
         unit: str = self.payload['type']
 
         person: dict = decoding_orm(data_character, unit)[unit]
-        d_lvl, h_lvl, a_lvl = person['d_lvl'], person['h_lvl'], person['a_lvl']
+        d_lvl, a_lvl = person['d_lvl'], person['a_lvl']
         hp = Character_show_lvl(data_character, param=unit).get_health_point()
         game[self.user_id] = {'enemy_id': enemy_id, 'name': name, 'step': step, 'time': date.now(),
                               'peer_id': self.peer_id,
-                              'character': {'class': unit, 'd_lvl': d_lvl, 'h_lvl': h_lvl, 'a_lvl': a_lvl, 'hp': hp}}
-        print(game)
+                              'character': {'class': unit, 'd_lvl': d_lvl, 'a_lvl': a_lvl, 'hp': hp}}
+
         if self.user_id in game and enemy_id in game:
             enemy_unit = game[enemy_id]['character']['class']
             enemy_name = game[enemy_id]['name']
@@ -281,6 +384,7 @@ class Event_commands:
                     keyboard = create_keyboard(Move_L, Body_Sh, Move_R)
                 message = f'Первым стрелять будет @id{enemy_id}({enemy_name}) по @id{self.user_id}({name})'
                 self.messages_edit(message=message, keyboard=keyboard)
+            del pick_character[self.user_id], pick_character[enemy_id]
 
     def mge_pvp(self):
         """
@@ -349,9 +453,9 @@ class Menu:
         Units, Stat = buttons
         keyboard = create_keyboard(Units, Stat)
         message = f'@id{self.user_id}(Меню)\n' \
-                  f'*Улучшения Урона для 1lvl стоит {Cost_up.Damage}, послдедующее улучшение: lvl * {Cost_up.Damage}\n' \
-                  f'*Улучшения Здоровья для 1lvl стоит {Cost_up.Health}, послдедующее улучшение: lvl * {Cost_up.Health}\n' \
-                  f'*Улучшения Точности для 1lvl стоит {Cost_up.Accuracy}, послдедующее улучшение: lvl * {Cost_up.Accuracy}\n'
+                  f'•Улучшения Урона для 1lvl стоит {Cost_up.Damage}, послдедующее улучшение: lvl * {Cost_up.Damage}\n' \
+                  f'•Улучшения Здоровья для 1lvl стоит {Cost_up.Health}, послдедующее улучшение: lvl * {Cost_up.Health}\n' \
+                  f'•Улучшения Точности для 1lvl стоит {Cost_up.Accuracy}, послдедующее улучшение: lvl * {Cost_up.Accuracy}\n'
         self.messages_edit(message=message, keyboard=keyboard)
 
     def show_Lvl(self):
@@ -369,7 +473,6 @@ class Menu:
             message = Character_show_lvl(Unit_lvls).show_lvl_Demoman()
         else:
             message = "Неизвестная ошибка..."
-
         Lvl_up[self.user_id] = self.type_button
 
         Damage, Health, Accuracy, Back = add_user_to_button(Damage, Health, Accuracy, Back, User_1=self.user_id)
@@ -401,11 +504,11 @@ class Menu:
         if text is None:
             db_sess.add(heros)
             db_sess.commit()
+            Damage, Health, Accuracy, Back = add_user_to_button(Damage, Health, Accuracy, Back, User_1=self.user_id)
+            keyboard = create_keyboard(Damage, Health, Accuracy, Back)
+            self.messages_edit(message=message, keyboard=keyboard)
         else:
             self.event_sender(dump(text))
-        Damage, Health, Accuracy, Back = add_user_to_button(Damage, Health, Accuracy, Back, User_1=self.user_id)
-        keyboard = create_keyboard(Damage, Health, Accuracy, Back)
-        self.messages_edit(message=message, keyboard=keyboard)
         db_sess.close()
 
     def person(self):
@@ -446,20 +549,16 @@ class Menu:
         games = user.count_of_game
         wins = user.wins
         loses = user.loses
-        rank = None
+        rank = rank_to_str(points, RANKS)
 
-        for key in RANKS:
-            if RANKS[key] <= points:
-                rank = key
-        if rank is None:
-            rank = 'Отсутствует'
+        mes_win = f'Побед: 「{wins}({wins / games * 100:.2f}%)」' if wins != 0 else 'Побед: 「0」'
+        mes_lose = f'Поражений: 「{loses}({loses / games * 100:.2f}%)」' if loses != 0 else 'Поражений: 「0」'
 
-        mes_win = f'Побед: {wins}({wins / games * 100:.2f}%)' if wins != 0 else 'Побед: 0'
-        mes_lose = f'Поражений: {loses}({loses / games * 100:.2f}%)' if loses != 0 else 'Поражений: 0'
-        message = f'Статистика @id{self.user_id}({name}) | Зарегистрирован: {register}:\n' \
-                  f'Очки: {points} | Звание: {rank}\n' \
-                  f'Игры: {games} | Кредиты: {balance}$\n' \
-                  f'{mes_win} | {mes_lose}'
+        message = f'Статистика @id{self.user_id}({name})\n' \
+                  f'Зарегистрирован на МГЕ: {register}:\n\n' \
+                  f'Очки: 「{points}𝙋𝙏𝙎」¦  Звание: {rank}\n' \
+                  f'Игры: 「{games}」¦ Кредиты: {balance}₭\n' \
+                  f'{mes_win}¦ {mes_lose}'
 
         Sniper_stat, Solder_stat, Demoman_stat, Back = add_user_to_button(Sniper_stat, Solder_stat, Demoman_stat, Back,
                                                                           User_1=self.user_id)
@@ -522,173 +621,76 @@ class Menu:
         VK.messages.edit(**post)
 
 
-class Commands:
+class Checker_time:
     """
-    Обраотчик комманд
-
+    Doc
     """
 
-    def __init__(self, event_dict: dict):
-        self.event_dict = event_dict
-        self.peer_id: int = event_dict.get('peer_id')  # chat id
-        self.user_id: int = event_dict.get('from_id')
-        self.reply_user = None  # то же что и user_id для 2 человека
-        self.message: str = event_dict.get('text').lower()
-        if event_dict.get('date'):
-            self.date: object = date.utcfromtimestamp(event_dict.get('date'))  # дата сообщения
-        self.reply: dict = event_dict.get('reply_message')
-        if self.reply:
-            self.reply_user: int = self.reply.get('from_id')
-            self.reply_message: str = self.reply.get('text')
-            self.reply_date: object = date.utcfromtimestamp(self.reply.get('date'))
-        try:
-            self.reply_user = self.message.split()[1][3:12]
-        except Exception:
-            pass
+    def __init__(self):
+        self.wait = delta(minutes=0, seconds=2)
 
-        self.command_handler()
+    def delete(self, data: dict, name: str):
+        """
+        очистка словарей от просроченных пользователей
+        """
+        start_time = data['time']
+        peer_id = data['peer_id']
+        id_1 = data['id']
+        id_2 = None
 
-    def sender(self, message: Optional[str] = None, keyboard: Optional[object] = None,
-               attachments: Optional[object] = None) -> None:
-        """
-        Отправка сообщения в беседу
-        :param message: (str) отправляемый текст
-        :param keyboard: (VkKeyBoard) клавиатура к сообщению
-        :param attachments: (object) фото/аудио фаил (паблик не может отправлять видео фаилы)
-        :return:
-        """
-        post = {'peer_id': self.peer_id, 'chat_id': 100000000, 'message': message, 'keyboard': keyboard,
-                'attachments': attachments, 'sticker_id': None, 'peer_ids': self.peer_id,
+        if start_time + self.wait < date.now():
+
+            if name == 'invite':
+                id_2 = invite[id_1]['id']
+                del invite[id_1], invite[id_2]
+            elif name == 'preparation':
+                id_2 = preparation[id_1]['id']
+                del preparation[id_1], preparation[id_2]
+            elif name == 'game':
+                id_2 = preparation[id_1]['id']
+                del game[id_1], game[id_2]
+
+            elif name == 'pick_character':
+                id_2 = pick_character[id_1]['id']
+                del pick_character[id_1], pick_character[id_2]
+
+            index_1 = general_list.index(id_1)
+            del general_list[index_1]
+            index_2 = general_list.index(id_2)
+            del general_list[index_2]
+
+            self.sender(peer_id=peer_id, message='Error Time')
+
+    def sender(self, peer_id: int, message: str) -> None:
+        post = {'peer_id': peer_id, 'chat_id': 100000000, 'message': message,
                 'random_id': get_random_id()}
         VK.messages.send(**post)
 
-    def command_handler(self) -> None:
+    def pepe(self):
         """
+        Функция ищет просроченное время и удаляет пользователя из игры
         :return:
         """
-        if self.message.split()[0] == 'mge':
-            self.invitation_to_the_mge()
-            if self.reply_user:
-                """Вызов определённого пользователя на дуэль"""
-                pass
-            else:
-                """Вызов рандомного пользователя на дуэль"""
-                pass
 
-        elif self.message == 'reg':
-            self.register()
+        while True:
+            time.sleep(1)
+            try:
+                if invite:
+                    for id in invite:
+                        self.delete(invite[id], 'invite')
+                if preparation:
+                    for id in preparation:
+                        self.delete(preparation[id], 'preparation')
+                if game:
+                    for id in game:
+                        self.delete(game[id], 'game')
 
-        elif self.message.split()[0] == 'name':
-            """Смена ника"""
-            self.new_nickname()
+                if pick_character:
+                    for id in pick_character:
+                        self.delete(pick_character[id], 'game')
 
-        elif self.message == 'menu':
-            self.create_menu()
-
-    def new_nickname(self) -> None:
-        """
-        Смена имени в database
-        :return None:
-        """
-        nickname = (' ').join(self.event_dict['text'].split()[1:])
-        result = f'Error: {len(nickname)} < 16 символов'
-        if len(nickname) <= 16:
-            db_sess = db_session.create_session()
-            db_sess.query(User).filter_by(user_id=self.user_id).update({'user_name': nickname})
-            db_sess.commit()
-            result = 'complete'
-        self.sender(message=f'{result}: {nickname}')
-
-    def register(self) -> None:
-        """
-        Добавление пользователя в базу данных
-        """
-        db_sess = db_session.create_session()
-        try:
-            user = db_sess.query(User).filter_by(user_id=self.user_id).first().user_id
-            self.sender(message=f'@id{self.user_id}(USER), ты, регистрировался уже!')
-        except Exception:
-
-            user = User()
-
-            user.user_id = self.user_id
-            user.user_name = 'участник'
-            db_sess.add(user)
-            db_sess.commit()
-
-            hero = User_Heros(user_key=user.id)
-            stats = User_Stat(user_key=user.id)
-            db_sess.add(hero)
-            db_sess.commit()
-            db_sess.add(stats)
-            db_sess.commit()
-
-            self.sender(message=f'@id{self.user_id}(USER) Зарегестрирован на участие в МГЕ схватках!')
-
-        finally:
-            db_sess.close()
-
-    def create_menu(self):
-        global Units, Stat
-        db_sess = db_session.create_session()
-        user = db_sess.query(User).filter_by(user_id=self.user_id).scalar()
-        if user:
-            buttons = add_user_to_button(Units, Stat, User_1=self.user_id)
-            Units, Stat = buttons
-            keyboard = create_keyboard(Units, Stat)
-            message = f'@id{self.user_id}(Меню)\n' \
-                      f'*Улучшения Урона для 1lvl стоит {Cost_up.Damage}, послдедующее улучшение: lvl * {Cost_up.Damage}\n' \
-                      f'*Улучшения Здоровья для 1lvl стоит {Cost_up.Health}, послдедующее улучшение: lvl * {Cost_up.Health}\n' \
-                      f'*Улучшения Точности для 1lvl стоит {Cost_up.Accuracy}, послдедующее улучшение: lvl * {Cost_up.Accuracy}\n'
-            self.sender(message=message, keyboard=keyboard)
-
-        else:
-            message = f'@id{self.user_id}, не зарегистрирован!'
-            self.sender(message=message)
-        db_sess.close()
-
-    def invitation_to_the_mge(self) -> None:
-        """
-        Приглашение пользователя на дуэль
-        :return:
-        """
-        db_sess = db_session.create_session()
-        user = db_sess.query(User).filter_by(user_id=self.user_id).scalar()
-        user_2 = db_sess.query(User).filter_by(user_id=self.reply_user).scalar()
-
-        if user and user_2:
-            if user.user_id != user_2.user_id:
-                id_1: int = user.user_id
-                name: str = user.user_name
-
-                id_2: int = user_2.user_id
-                name_2: str = user_2.user_name
-
-                if id_1 in invite:
-                    self.sender(message=f'Error: @id{id_1} is invited')
-                elif id_2 in invite:
-                    self.sender(message=f'Error: @id{id_2} is invited')
-                else:
-                    text = f'@id{id_1}({name_2.title()}), Вас вызывает на дуэль господин @id{id_2}({name.title()})'
-                    Accept['payload']['ids'] = [id_1, id_2]
-                    Deny['payload']['ids'] = [id_1, id_2]
-                    general_list.append(id_1), general_list.append(id_2)
-                    print(general_list)
-                    keyboard = create_keyboard(Accept, Deny)
-                    invite[id_1] = {'id': id_2, 'bool': False, 'time': date.now(), 'peer_id': self.peer_id}
-                    invite[id_2] = {'id': id_1, 'bool': True, 'time': date.now(), 'peer_id': self.peer_id}
-
-                    self.sender(message=text, keyboard=keyboard)
-            else:
-                message = choice(speech['==']).replace('@id', f'@id{self.reply_user}')
-                self.sender(message=message)
-        elif user:
-            message = f'@id{self.reply_user} no reg!'
-            self.sender(message=message)
-        elif user_2:
-            message = f'@id{self.user_id} no reg!'
-            self.sender(message=message)
-        db_sess.close()
+            except Exception as error:
+                print(Text_Warning, error, M_0)
 
 
 class Bot:
@@ -699,7 +701,6 @@ class Bot:
 
     def __init__(self, Token: str, Page_id: str, App_id=6441755):
         global VK, Upload
-        page_id = Page_id
         self.Token = Token
         self.Page_id = Page_id
 
@@ -717,9 +718,9 @@ class Bot:
             try:
                 for event in self.VkBotLongPoll.listen():
                     if event.type == VkBotEventType.MESSAGE_EVENT:
-                        Event_commands(event_dict=event.object)
+                        Event_Commands(event_dict=event.object)
                     elif event.type == VkBotEventType.MESSAGE_NEW and event.from_chat:
-                        Commands(event_dict=event.message)
+                        Text_Commands(event_dict=event.message)
 
             except Exception as error:
                 print(T_RED, M_FAT, error, '\n', format_exc(), M_0)
@@ -730,8 +731,7 @@ if __name__ == '__main__':
 
     token = setting['token_2']
     group_id = setting['group_id']
-    Thread(target=Checker_time().pepe)
+    Thread(target=Checker_time().pepe).start()
     bot = Bot(token, group_id)
     run = bot.runner
     Thread(target=run, args=()).start()
-    print(True)
