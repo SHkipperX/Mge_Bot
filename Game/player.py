@@ -1,7 +1,5 @@
-from typing import Union
-
-from characters import Sniper, Demoman, Soldier, TARGET_BODY, TARGET_HEAD, BaseCharacter
-from constants import SIDE_LEFT, SIDE_RIGHT, SIDE_NONE
+from characters import Sniper, Demoman, Soldier, TARGET_BODY, BaseCharacter
+from constants import SIDE_NONE
 from stats import Side
 
 
@@ -38,7 +36,7 @@ class Player:
 
         if isinstance(self._hero, Sniper):
             if self._hero.hit(target):
-                if self._side == player._side:
+                if self._side == player.side:
                     damage = self._hero.get_and_nullify_damage()
                     player.hero.health.health -= damage
                 else:
@@ -48,7 +46,7 @@ class Player:
                         player.hero.health.health -= damage
         elif isinstance(self._hero, (Soldier, Demoman)):
             if self._hero.hit():
-                if self._side == player._side:
+                if self._side == player.side:
                     damage = self._hero.get_and_nullify_damage()
                     player.hero.health.health -= damage
                 else:
@@ -78,11 +76,3 @@ class Player:
     @property
     def health(self):
         return self.hero.health
-
-
-# testing
-if __name__ == '__main__':
-    player1 = Player('sniper', 100, 100, health=80)
-    player2 = Player('demoman', 100, 100, health=100)
-    print(f"player_1: {player1.__dict__.get('_hero').__dict__.get('accuracy').__dict__}")
-    print(f"player_2: {player2.__dict__.get('_hero').__dict__}")
