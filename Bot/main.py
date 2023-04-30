@@ -108,12 +108,11 @@ class Text_Commands:
         db_sess.close()
         for num, lider in enumerate(liders):
             text = f'{num + 1}. @id{lider.user_id}({lider.user_name}):\n' \
-            f'Очки: {lider.points} | Звание: {rank_to_str(lider.points, RANKS)}\n' \
-            f'Победы: {lider.wins} | Поражения: {lider.loses}\n\n'
+                   f'Очки: {lider.points} | Звание: {rank_to_str(lider.points, RANKS)}\n' \
+                   f'Победы: {lider.wins} | Поражения: {lider.loses}\n\n'
             sp_ld.append(text)
         message = ('').join(sp_ld)
         self.sender(message=message)
-
 
     def meme_image(self, file_name='unknown2.png'):
         photo = Upload.photo_messages(Route + file_name)[0]
@@ -252,7 +251,7 @@ class Event_Commands:
                 self.character_selection()
 
             elif squad == 'game':
-                self.mge_pvp()
+                self.set_param_mge()
 
         elif squad == 'menu' and self.user_id in self.holders_button:
             Menu(type_button=self.payload['type'], user_id=self.user_id, conversation_message_id=self.con_mes_id,
@@ -384,10 +383,11 @@ class Event_Commands:
         d_lvl, a_lvl = person['d_lvl'], person['a_lvl']
         hp = Character_show_lvl(data_character, param=unit).get_health_point()
         player = Player(_class=unit, d_lvl=d_lvl, a_lvl=a_lvl, hp=hp)
-        game[self.user_id] = {'enemy_id': enemy_id, 'name': name, 'step': step, 'time': date.now(),
+
+        game[self.user_id] = {'id': enemy_id, 'name': name, 'step': step, 'time': date.now(),
                               'peer_id': self.peer_id, 'class': unit, 'obj_Player': player, 'move': None,
                               'target': None, 'line_shot': None,
-                              'stat': {'damage': 0, 'games': 1, 'shots': 0, 'hits': 0, 'wins': 0, 'loses': 0}}
+                              'stats': {'damage': 0, 'games': 1, 'shots': 0, 'hits': 0, 'wins': 0, 'loses': 0}}
 
         if self.user_id in game and enemy_id in game:
             enemy_unit = game[enemy_id]['class']
@@ -419,9 +419,14 @@ class Event_Commands:
             del pick_character[self.user_id], pick_character[enemy_id]
 
     def end_game(self):
-        id_2 = game[self.user_id]['enemy_id']
-        game[id_2]['stat']['loses'] += 1
-        game[self.user_id]['wins'] += 1
+
+        id_2 = game[self.user_id]['id']
+        name_1 = game[self.user_id]['name']
+        name_2 = game[id_2]['name']
+        game[self.user_id]['stats']['loses'] += 1
+        game[id_2]['stats']['wins'] += 1
+        _class_1 = game[self.user_id]['class']
+        _class_2 = game[id_2]['class']
 
         db_sess = db_session.create_session()
 
@@ -431,11 +436,18 @@ class Event_Commands:
         key_id1 = user_1.id
         key_id2 = user_2.id
 
-        heros_1 = db_sess.query(User_Heros).filter_by(user_key=key_id1).first()
-        heros_2 = db_sess.query(User_Heros).filter_by(user_key=key_id2).first()
+        heros_1 = db_sess.query(User_Stat).filter_by(user_key=key_id1).first()
+        heros_1_credits = db_sess.query(User_Heros).filter_by(user_key=key_id1).first()
 
-        abc_1 = Update_stat(heros_1, game[self.user_id]['stat'])
-        abc_2 = Update_stat(heros_2, game[id_2]['stat'])
+        heros_1_credits.credits += 50
+        db_sess.add(heros_1_credits)
+        db_sess.commit()
+
+        heros_2 = db_sess.query(User_Stat).filter_by(user_key=key_id2).first()
+
+        abc_1 = Update_stat(heros_1, game[self.user_id]['stats'])
+        abc_2 = Update_stat(heros_2, game[id_2]['stats'])
+
 
         heros_1 = abc_1.Update_sniper() if _class_1 == 'sniper' else abc_1.Update_solder() \
             if _class_1 == 'solder' else abc_1.Update_demoman()
@@ -460,31 +472,94 @@ class Event_Commands:
         db_sess.add(user_2)
         db_sess.commit()
         db_sess.close()
-
-        message = f'@id{self.user_id}({name_1}) Одержал победу над @id{id_2}({name_2}) за класс {_class_1}\n' \
-                  f'+30𝙋𝙏𝙎 | +50K'
-        self.messages_edit(message=message)
         del game[self.user_id], game[id_2]
-        return
+        message = f'@id{id_2}({name_2}) Одержал победу над @id{self.user_id}({name_1}) за класс {_class_1}\n' \
+                  f'+30𝙋𝙏𝙎 | +50K'
+        return message
 
-    def mge_pvp(self):
+
+
+    def shot(self):
+        global Move_L, Move_R
+
+        id_2 = game[self.user_id]['id']
+        name = game[id_2]['name']
+        Move_L, Move_R = add_user_to_button(Move_L, Move_R, User_1=id_2)
+        keyboard = create_keyboard(Move_L, Move_R)
+        message = f'@id{id_2}({name}) Увернись от выстрела'
+        self.messages_edit(message=message, keyboard=keyboard)
+
+    def move(self):
+        global shot_L, Head_Sh, Body_Sh, shot_R
+        id_2 = game[self.user_id]['id']
+        name_1 = game[self.user_id]['name']
+        name_2 = game[id_2]['name']
+
+        line_shot = game[id_2]['line_shot']
+        target = game[id_2]['target']
+        move = game[self.user_id]['move']
+        char = game[self.user_id]['class']
+
+        player_1: Player = game[id_2]['obj_Player']  # стреляющий
+        player_2: Player = game[self.user_id]['obj_Player']  # получающий
+
+        player_2.step(move)
+        damage = player_1.hit(player_2, side_shot=line_shot, target=target)
+        hp = player_2.health
+
+        if char in ('sniper',):
+            shot_L, Head_Sh, Body_Sh, shot_R = add_user_to_button(shot_L, Head_Sh, Body_Sh, shot_R,
+                                                                  User_1=self.user_id)
+            keyboard = create_keyboard(shot_L, Head_Sh, Body_Sh, shot_R)
+        elif char in ('solder', 'demoman'):
+            shot_L, Body_Sh, shot_R = add_user_to_button(shot_L, Body_Sh, shot_R, User_1=self.user_id)
+            keyboard = create_keyboard(shot_L, Body_Sh, shot_R)
+
+
+
+        message = f'@id{id_2}({name_2}) Выстрелил по @id{self.user_id}({name_1}) и нанёс {damage}Ур.\n' \
+                  f'@id{self.user_id}({name_1}), осталось {hp}Hp\n' \
+                  f'@id{self.user_id}({name_1}) Стреляет @id{id_2}({name_2})'
+        flag = self.update_game_stats(damage=damage, hp=hp)
+        if flag:
+            self.messages_edit(message=message, keyboard=keyboard)
+
+
+    def update_game_stats(self, damage: int, hp: int):
+        id_2 = game[self.user_id]['id']
+        stats = game[id_2]['stats']
+
+
+        stats['shots'] += 1
+        if damage:
+            stats['damage'] += damage
+            stats['hits'] += 1
+
+        if hp < 0:
+            self.end_game()
+        else:
+            return True
+
+
+
+    def set_param_mge(self):
         global shot_L, Move_L, Head_Sh, Body_Sh, Move_R, shot_R
         """
         PvP 2 игроков
         Как бы это не выглядело ужасно, но это делалось на коленке в 2 часа ночи =)
         """
-        target = game[self.user_id]['target']
-        shot = game[self.user_id]['line_shot']
-        moving = game[self.user_id]['move']
 
+        target = game[self.user_id]['target']
+        line_shot = game[self.user_id]['line_shot']
+        moving = game[self.user_id]['move']
         type_button = self.payload['type']
-        char = game[self.user_id]['class']
+
 
         if target is None and type_button in ('_body_', '_head_'):
             """Выбор куда стрелять: Голова, тело"""
             game[self.user_id]['target'] = type_button
 
-        elif shot is None and type_button in ('_right_', '_left_'):
+        elif line_shot is None and type_button in ('_right_', '_left_'):
             """Выбор куда стрелять: Лево, Право"""
             game[self.user_id]['line_shot'] = type_button
 
@@ -494,38 +569,15 @@ class Event_Commands:
             game[self.user_id]['move'] = type_button[:-1]
 
         target = game[self.user_id]['target']
-        id_2 = game[self.user_id]['enemy_id']
-        name_2 = game[id_2]['name']
-        name_1 = game[self.user_id]['name']
+        id_2 = game[self.user_id]['id']
         shot = game[self.user_id]['line_shot']
         moving = game[self.user_id]['move']
 
         if target and shot:
-            Move_L, Move_R = add_user_to_button(Move_L, Move_R, User_1=id_2)
-            keyboard = create_keyboard(Move_L, Move_R)
-            message = f'@id{id_2} Уворачивайся'
-            self.messages_edit(message=message, keyboard=keyboard)
-            return
+            self.shot()
 
         elif moving:
             """Подведение итогов Выстрел-Уклонение"""
-            player_1: Player = game[self.user_id]['obj_Player']
-            player_2: Player = game[id_2]['obj_Player']
-            player_2.step(moving)
-            print(game)
-            damage = player_2.hit(player_1, shot, target)
-            enemy_hp = player_1.health
-
-
-            stat = game[self.user_id]['stat']
-            stat['damage'] += damage
-            stat['shots'] += 1
-
-            if damage != 0:
-                stat['hits'] += 1
-
-            if enemy_hp <= 0:
-                self.end_game()
 
             game[self.user_id]['step'] = True
             game[id_2]['step'] = False
@@ -538,17 +590,7 @@ class Event_Commands:
             game[self.user_id]['time'] = date.now()
             game[id_2]['time'] = date.now()
 
-            if char == 'sniper':
-                shot_L, Head_Sh, Body_Sh, shot_R = add_user_to_button(shot_L, Head_Sh, Body_Sh, shot_R,
-                                                                      User_1=self.user_id)
-                keyboard = create_keyboard(shot_L, Head_Sh, Body_Sh, shot_R)
-            else:
-                shot_L, Body_Sh, shot_R = add_user_to_button(shot_L, Body_Sh, shot_R, User_1=self.user_id)
-                keyboard = create_keyboard(shot_L, Body_Sh, shot_R)
-            message = f'@id{id_2}({name_2}) Выстрелил по @id{self.user_id}({name_1}) и нанёс {damage}Ур.\n'\
-                      f'@id{self.user_id}({name_1}), осталось {enemy_hp}Hp\n' \
-                      f'@id{self.user_id}({name_1}) Стреляет @id{id_2}({name_2})'
-            self.messages_edit(message=message, keyboard=keyboard)
+            self.move()
 
     def event_sender(self, event_data: str) -> None:
         """

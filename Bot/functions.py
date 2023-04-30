@@ -302,41 +302,42 @@ class Get_stat:
 
 
 class Update_stat:
-    def __init__(self, data_unit_stat: User_Stat, _class: str, **kwargs):
+    def __init__(self, data_unit_stat: User_Stat, data: dict):
         self.data = data_unit_stat
-        self.damage = kwargs['damage']
-        self.games = kwargs['games']
-        self.shots = kwargs['shots']
-        self.hits = kwargs['hits']
-        self.wins = kwargs['wins']
-        self.loses = kwargs['loses']
+        print(data)
+        self.damage = data['damage']
+        self.games = data['games']
+        self.shots = data['shots']
+        self.hits = data['hits']
+        self.wins = data['wins']
+        self.loses = data['loses']
 
 
     def Update_sniper(self):
-        self.data.sn_damage = self.damage
-        self.data.sn_games = self.games
-        self.data.sn_shot = self.shots
-        self.data.sn_hits = self.hits
-        self.data.sn_wins = self.wins
-        self.data.sn_loses = self.loses
+        self.data.sn_damage += self.damage
+        self.data.sn_games += self.games
+        self.data.sn_shot += self.shots
+        self.data.sn_hits += self.hits
+        self.data.sn_wins += self.wins
+        self.data.sn_loses += self.loses
         return self.data
 
     def Update_solder(self):
-        self.data.so_damage = self.damage
-        self.data.so_games = self.games
-        self.data.so_shot = self.shots
-        self.data.so_hits = self.hits
-        self.data.so_wins = self.wins
-        self.data.so_loses = self.loses
+        self.data.so_damage += self.damage
+        self.data.so_games += self.games
+        self.data.so_shot += self.shots
+        self.data.so_hits += self.hits
+        self.data.so_wins += self.wins
+        self.data.so_loses += self.loses
         return self.data
 
     def Update_demoman(self):
-        self.data.de_damage = self.damage
-        self.data.de_games = self.games
-        self.data.de_shot = self.shots
-        self.data.de_hits = self.hits
-        self.data.de_wins = self.wins
-        self.data.de_loses = self.loses
+        self.data.de_damage += self.damage
+        self.data.de_games += self.games
+        self.data.de_shot += self.shots
+        self.data.de_hits += self.hits
+        self.data.de_wins += self.wins
+        self.data.de_loses += self.loses
         return self.data
 
 
