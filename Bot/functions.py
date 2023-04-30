@@ -354,6 +354,8 @@ def decoding_orm(user_object: object, character: str) -> dict:
                 user_data[character]['d_lvl'] = user_object[atr]
             elif 'accuracy' in atr:
                 user_data[character]['a_lvl'] = user_object[atr]
+            elif 'health' in atr:
+                user_data[character]['h_lvl'] = user_object[atr]
 
     return user_data
 

@@ -380,10 +380,8 @@ class Event_Commands:
         unit: str = self.payload['type']
 
         person: dict = decoding_orm(data_character, unit)[unit]
-        d_lvl, a_lvl = person['d_lvl'], person['a_lvl']
-        hp = Character_show_lvl(data_character, param=unit).get_health_point()
-        print(dict(_class=unit, d_lvl=d_lvl, a_lvl=a_lvl, hp=hp))
-        player = Player(_class=unit, d_lvl=d_lvl, a_lvl=a_lvl, hp=hp)
+        d_lvl, a_lvl, h_lvl = person['d_lvl'], person['a_lvl'], person['h_lvl']
+        player = Player(_class=unit, d_lvl=d_lvl, a_lvl=a_lvl, h_lvl=h_lvl)
 
         game[self.user_id] = {'id': enemy_id, 'name': name, 'step': step, 'time': date.now(),
                               'peer_id': self.peer_id, 'class': unit, 'obj_Player': player, 'move': None,
@@ -438,10 +436,10 @@ class Event_Commands:
         key_id2 = user_2.id
 
         heros_1 = db_sess.query(User_Stat).filter_by(user_key=key_id1).first()
-        heros_1_credits = db_sess.query(User_Heros).filter_by(user_key=key_id1).first()
+        heros_credits = db_sess.query(User_Heros).filter_by(user_key=key_id2).first()
 
-        heros_1_credits.credits += 50
-        db_sess.add(heros_1_credits)
+        heros_credits.credits += 50
+        db_sess.add(heros_credits)
         db_sess.commit()
 
         heros_2 = db_sess.query(User_Stat).filter_by(user_key=key_id2).first()
@@ -475,7 +473,7 @@ class Event_Commands:
         db_sess.close()
         del game[self.user_id], game[id_2]
         message = f'@id{id_2}({name_2}) Одержал победу над @id{self.user_id}({name_1}) за класс {_class_1}\n' \
-                  f'+30𝙋𝙏𝙎 | +50K'
+                  f'+30𝙋𝙏𝙎 | +50₭'
         return message
 
     def shot(self):
@@ -499,7 +497,6 @@ class Event_Commands:
         move = game[self.user_id]['move']
         char = game[self.user_id]['class']
 
-        print(line_shot, target, move)
 
         player_1: Player = game[id_2]['obj_Player']  # стреляющий
         player_2: Player = game[self.user_id]['obj_Player']  # получающий
@@ -520,10 +517,10 @@ class Event_Commands:
                   f'@id{self.user_id}({name_1}), осталось {hp}Hp\n' \
                   f'@id{self.user_id}({name_1}) Стреляет @id{id_2}({name_2})'
         flag = self.update_game_stats(damage=damage, hp=hp)
-        if flag:
+        if flag is False:
             self.messages_edit(message=message, keyboard=keyboard)
         else:
-            self.messages_edit(message=message)
+            self.messages_edit(message=flag)
 
     def update_game_stats(self, damage: int, hp: int):
         id_2 = game[self.user_id]['id']
@@ -535,9 +532,11 @@ class Event_Commands:
             stats['hits'] += 1
 
         if hp < 0:
-            self.end_game()
+            flag = self.end_game()
+            print(flag)
+            return flag
         else:
-            return True
+            return False
 
     def set_param_mge(self):
         global shot_L, Move_L, Head_Sh, Body_Sh, Move_R, shot_R
@@ -575,17 +574,17 @@ class Event_Commands:
         elif moving:
             """Подведение итогов Выстрел-Уклонение"""
             self.move()
-
-            game[self.user_id]['step'] = True
-            game[id_2]['step'] = False
-            game[self.user_id]['target'] = None
-            game[id_2]['target'] = None
-            game[self.user_id]['line_shot'] = None
-            game[id_2]['line_shot'] = None
-            game[self.user_id]['move'] = None
-            game[id_2]['move'] = None
-            game[self.user_id]['time'] = date.now()
-            game[id_2]['time'] = date.now()
+            if self.user_id in game:
+                game[self.user_id]['step'] = True
+                game[id_2]['step'] = False
+                game[self.user_id]['target'] = None
+                game[id_2]['target'] = None
+                game[self.user_id]['line_shot'] = None
+                game[id_2]['line_shot'] = None
+                game[self.user_id]['move'] = None
+                game[id_2]['move'] = None
+                game[self.user_id]['time'] = date.now()
+                game[id_2]['time'] = date.now()
 
 
 
