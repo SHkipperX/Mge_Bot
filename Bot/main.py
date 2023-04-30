@@ -419,6 +419,7 @@ class Event_Commands:
             del pick_character[self.user_id], pick_character[enemy_id]
 
     def end_game(self):
+        id_2 = game[self.user_id]['enemy_id']
         game[id_2]['stat']['loses'] += 1
         game[self.user_id]['wins'] += 1
 
@@ -511,11 +512,10 @@ class Event_Commands:
             player_1: Player = game[self.user_id]['obj_Player']
             player_2: Player = game[id_2]['obj_Player']
             player_2.step(moving)
-            print(shot, target)
-            damage = player_1.hit(player_2, shot, target)
-            enemy_hp = player_2.health
-            print('{}. damage: {}'.format(_class_1, damage))
-            print('{}. enemy_hp: {}'.format(_class_2, enemy_hp))
+            print(game)
+            damage = player_2.hit(player_1, shot, target)
+            enemy_hp = player_1.health
+
 
             stat = game[self.user_id]['stat']
             stat['damage'] += damage
@@ -524,7 +524,7 @@ class Event_Commands:
             if damage != 0:
                 stat['hits'] += 1
 
-            if enemy_hp == 0:
+            if enemy_hp <= 0:
                 self.end_game()
 
             game[self.user_id]['step'] = True
