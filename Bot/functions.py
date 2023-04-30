@@ -18,7 +18,7 @@ class Sniper:
     Hp_Percent = 0.08
 
     Accuracy_head = 0.12
-    Accuracy_body = 0.38
+    Accuracy_body = 0.4
     Acc_percent = 0.08
 
 

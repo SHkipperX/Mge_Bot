@@ -382,6 +382,7 @@ class Event_Commands:
         person: dict = decoding_orm(data_character, unit)[unit]
         d_lvl, a_lvl = person['d_lvl'], person['a_lvl']
         hp = Character_show_lvl(data_character, param=unit).get_health_point()
+        print(dict(_class=unit, d_lvl=d_lvl, a_lvl=a_lvl, hp=hp))
         player = Player(_class=unit, d_lvl=d_lvl, a_lvl=a_lvl, hp=hp)
 
         game[self.user_id] = {'id': enemy_id, 'name': name, 'step': step, 'time': date.now(),
@@ -430,8 +431,8 @@ class Event_Commands:
 
         db_sess = db_session.create_session()
 
-        user_1 = db_sess.query(User).filter_by(user_id=self.user_id).first()
-        user_2 = db_sess.query(User).filter_by(user_id=id_2).first()
+        user_1 = db_sess.query(User).filter_by(user_id=self.user_id).first()  # проигравший
+        user_2 = db_sess.query(User).filter_by(user_id=id_2).first()  # победивший
 
         key_id1 = user_1.id
         key_id2 = user_2.id
@@ -448,20 +449,20 @@ class Event_Commands:
         abc_1 = Update_stat(heros_1, game[self.user_id]['stats'])
         abc_2 = Update_stat(heros_2, game[id_2]['stats'])
 
-
         heros_1 = abc_1.Update_sniper() if _class_1 == 'sniper' else abc_1.Update_solder() \
             if _class_1 == 'solder' else abc_1.Update_demoman()
         heros_2 = abc_2.Update_sniper() if _class_2 == 'sniper' else abc_2.Update_solder() \
             if _class_2 == 'solder' else abc_2.Update_demoman()
 
-        user_1.wins += 1
-        user_1.count_of_game += 1
-        user_1.points += 30
-
-        user_2.loses += 1
+        user_2.wins += 1
         user_2.count_of_game += 1
-        if user_2.points - 30 < 0:
-            user_2.points = 0
+        user_2.points += 30
+
+        user_1.loses += 1
+        user_1.count_of_game += 1
+        user_1.points -= 30
+        if user_1.points < 0:
+            user_1.points = 0
 
         db_sess.add(heros_1)
         db_sess.commit()
@@ -476,8 +477,6 @@ class Event_Commands:
         message = f'@id{id_2}({name_2}) Одержал победу над @id{self.user_id}({name_1}) за класс {_class_1}\n' \
                   f'+30𝙋𝙏𝙎 | +50K'
         return message
-
-
 
     def shot(self):
         global Move_L, Move_R
@@ -500,6 +499,8 @@ class Event_Commands:
         move = game[self.user_id]['move']
         char = game[self.user_id]['class']
 
+        print(line_shot, target, move)
+
         player_1: Player = game[id_2]['obj_Player']  # стреляющий
         player_2: Player = game[self.user_id]['obj_Player']  # получающий
 
@@ -515,20 +516,18 @@ class Event_Commands:
             shot_L, Body_Sh, shot_R = add_user_to_button(shot_L, Body_Sh, shot_R, User_1=self.user_id)
             keyboard = create_keyboard(shot_L, Body_Sh, shot_R)
 
-
-
         message = f'@id{id_2}({name_2}) Выстрелил по @id{self.user_id}({name_1}) и нанёс {damage}Ур.\n' \
                   f'@id{self.user_id}({name_1}), осталось {hp}Hp\n' \
                   f'@id{self.user_id}({name_1}) Стреляет @id{id_2}({name_2})'
         flag = self.update_game_stats(damage=damage, hp=hp)
         if flag:
             self.messages_edit(message=message, keyboard=keyboard)
-
+        else:
+            self.messages_edit(message=message)
 
     def update_game_stats(self, damage: int, hp: int):
         id_2 = game[self.user_id]['id']
         stats = game[id_2]['stats']
-
 
         stats['shots'] += 1
         if damage:
@@ -539,8 +538,6 @@ class Event_Commands:
             self.end_game()
         else:
             return True
-
-
 
     def set_param_mge(self):
         global shot_L, Move_L, Head_Sh, Body_Sh, Move_R, shot_R
@@ -553,7 +550,6 @@ class Event_Commands:
         line_shot = game[self.user_id]['line_shot']
         moving = game[self.user_id]['move']
         type_button = self.payload['type']
-
 
         if target is None and type_button in ('_body_', '_head_'):
             """Выбор куда стрелять: Голова, тело"""
@@ -578,6 +574,7 @@ class Event_Commands:
 
         elif moving:
             """Подведение итогов Выстрел-Уклонение"""
+            self.move()
 
             game[self.user_id]['step'] = True
             game[id_2]['step'] = False
@@ -590,7 +587,7 @@ class Event_Commands:
             game[self.user_id]['time'] = date.now()
             game[id_2]['time'] = date.now()
 
-            self.move()
+
 
     def event_sender(self, event_data: str) -> None:
         """
@@ -882,7 +879,7 @@ class Checker_time:
                         self.delete(pick_character[id], 'game')
 
             except Exception as error:
-                pass
+                print(error)
 
 
 class Bot:
