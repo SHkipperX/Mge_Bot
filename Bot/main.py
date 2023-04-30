@@ -78,7 +78,7 @@ class Text_Commands:
         """
         :return:
         """
-        if self.message.split()[0] == 'mge':
+        if self.message.split()[0] in MGE:
             self.invitation_to_the_mge()
             if self.reply_user:
                 """Вызов определённого пользователя на дуэль"""
@@ -86,19 +86,19 @@ class Text_Commands:
             else:
                 """Вызов рандомного пользователя на дуэль"""
                 pass
-        elif self.message == 'liders':
+        elif self.message in LIDERS:
             self.show_lider()
 
-        elif self.message == 'reg':
+        elif self.message in REG:
             self.register()
 
-        elif self.message.split()[0] == 'name':
+        elif self.message.split()[0] in NAME:
             """Смена ника"""
             self.new_nickname()
 
-        elif self.message == 'menu':
+        elif self.message in MENU:
             self.create_menu()
-        elif self.message == 'meme':
+        elif self.message in MEME:
             self.meme_image()
 
     def show_lider(self):
@@ -127,7 +127,7 @@ class Text_Commands:
         :return None:
         """
         nickname = (' ').join(self.event_dict['text'].split()[1:])
-        result = f'Error: {len(nickname)} < 16 символов'
+        result = f'Error: {len(nickname)} > 16 символов'
         if len(nickname) <= 16:
             db_sess = db_session.create_session()
             db_sess.query(User).filter_by(user_id=self.user_id).update({'user_name': nickname})

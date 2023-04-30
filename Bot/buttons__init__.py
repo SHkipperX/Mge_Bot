@@ -18,3 +18,10 @@ Demoman_up = menu_set['units']['demoman']
 Damage, Health, Accuracy = menu_set['lvl_up']['damage'], menu_set['lvl_up']['health'], menu_set['lvl_up']['accuracy']
 
 Sniper_stat, Solder_stat, Demoman_stat = bs['sniper_stat'], bs['solder_stat'], bs['demoman_stat']
+
+MGE = ('mge', 'vut', 'мге', 'ьпу')
+LIDERS = ('liders', 'лидеры',)
+MEME = ('meme', 'меме')
+NAME = ('name', '+мгеник', 'ник', 'имя')
+REG = ('reg', 'register', 'рег')
+MENU = ('menu', 'меню')
