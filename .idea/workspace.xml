@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="9f5369bb-7ad2-4865-b2dc-44b1b33a6433" name="Changes" comment="fix">
+      <change beforePath="$PROJECT_DIR$/Bot/Game/characters.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/Game/constants.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/Game/player.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/Game/stats.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/Game/tools.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/Mode_text.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/_Classes_/Methods_over_Units.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/_Classes_/data_characteristic.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/button.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/buttons__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/data/218947192/218947192.db" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/data/meme/unknown2.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/functions/all_commands.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/functions/functions.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/main.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/orm_connector/__all_models.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/orm_connector/db_session.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/requirements.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Bot/setting.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
+  <component name="ProjectId" id="2OkXp8Wz3tO7gO84Cy5slRucQLN" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;deletionFromPopupRequiresConfirmation&quot;: &quot;false&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/conco/PycharmProjects/Mge_Bot&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PythonContentEntriesConfigurable&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\conco\PycharmProjects\Mge_Bot\Bot\functions" />
+      <recent name="C:\Users\conco\PycharmProjects\Mge_Bot\Bot\Game" />
+      <recent name="C:\Users\conco\PycharmProjects\Mge_Bot\Bot" />
+      <recent name="C:\Users\conco\PycharmProjects\Mge_Bot\Game" />
+      <recent name="C:\Users\conco\PycharmProjects\Mge_Bot" />
+    </key>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="9f5369bb-7ad2-4865-b2dc-44b1b33a6433" name="Changes" comment="update..." />
+      <created>1682105733238</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1682105733238</updated>
+    </task>
+    <task id="LOCAL-00001" summary="Стабильная версия (вроде как)">
+      <created>1682253321059</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1682253321059</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Стабильная версия (вроде как)">
+      <created>1682253395274</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1682253395274</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Осталось: Меню и игра&#10;death...">
+      <created>1682273192887</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1682273192887</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Осталось: Меню и игра&#10;death...">
+      <created>1682445446156</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1682445446156</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Добавлено полноценное меню&#10;Улучшение персонажей&#10;Осталась игра =)">
+      <created>1682457662783</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1682457662783</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Фиксы багов и обновление функционала&#10;Есть рабочее меню&#10;Доступно улучшение персов, обычная и подробная стата">
+      <created>1682541194902</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1682541194902</updated>
+    </task>
+    <task id="LOCAL-00007" summary="мая хи">
+      <created>1682651323822</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1682651323823</updated>
+    </task>
+    <task id="LOCAL-00008" summary="fix">
+      <created>1682652015560</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1682652015560</updated>
+    </task>
+    <task id="LOCAL-00009" summary="fix">
+      <created>1682713755400</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1682713755400</updated>
+    </task>
+    <task id="LOCAL-00010" summary="fix">
+      <created>1682724561286</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1682724561286</updated>
+    </task>
+    <task id="LOCAL-00011" summary="fix">
+      <created>1682773064757</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1682773064757</updated>
+    </task>
+    <task id="LOCAL-00012" summary="fix">
+      <created>1682873255852</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1682873255852</updated>
+    </task>
+    <task id="LOCAL-00013" summary="fix">
+      <created>1682880481344</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1682880481344</updated>
+    </task>
+    <task id="LOCAL-00014" summary="Оно работает">
+      <created>1682883605201</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1682883605201</updated>
+    </task>
+    <task id="LOCAL-00015" summary="Оно работает">
+      <created>1682885022628</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1682885022628</updated>
+    </task>
+    <task id="LOCAL-00016" summary="end">
+      <created>1682885624192</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1682885624192</updated>
+    </task>
+    <task id="LOCAL-00017" summary="end">
+      <created>1682885639110</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1682885639110</updated>
+    </task>
+    <task id="LOCAL-00018" summary="fix">
+      <created>1683376124431</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1683376124431</updated>
+    </task>
+    <task id="LOCAL-00019" summary="fix">
+      <created>1683378403955</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1683378403955</updated>
+    </task>
+    <task id="LOCAL-00020" summary="fix">
+      <created>1683400562398</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1683400562398</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Стабильная версия (вроде как)" />
+    <MESSAGE value="Осталось: Меню и игра&#10;death..." />
+    <MESSAGE value="Добавлено полноценное меню&#10;Улучшение персонажей&#10;Осталась игра =)" />
+    <MESSAGE value="Фиксы багов и обновление функционала&#10;Есть рабочее меню&#10;Доступно улучшение персов, обычная и подробная стата" />
+    <MESSAGE value="мая хи" />
+    <MESSAGE value="Оно работает" />
+    <MESSAGE value="end" />
+    <MESSAGE value="fix" />
+    <option name="LAST_COMMIT_MESSAGE" value="fix" />
+  </component>
+</project>
