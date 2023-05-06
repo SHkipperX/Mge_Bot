@@ -1,5 +1,4 @@
 import os.path
-
 from vk_api import VkApi, VkUpload  # Vk_api
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 from vk_api.keyboard import VkKeyboard
@@ -14,7 +13,7 @@ from threading import Thread
 # Другое_2
 from orm_connector import db_session
 from orm_connector.__all_models import User, User_Heros, User_Stat
-from Bot.functions.functions import decoding_orm, add_user_to_button, create_keyboard, dump
+from Bot.functions.functions import decoding_orm, add_user_to_button, create_keyboard, dump, Rock_Paper_Scissors
 from Bot._Classes_.Methods_over_Units import Character_show_lvl, Character_Up_lvl, Update_stat, Get_stat
 from Bot._Classes_.data_characteristic import Cost_up
 from buttons__init__ import *
@@ -147,9 +146,14 @@ class Text_commands(Base):
             self.create_menu()
         elif self.message in MEME:
             self.meme_image()
+        elif self.message in HELP:
+            self.help()
 
     def help(self):
-        pass
+        with open(file='functions/all_commands.txt', mode='r', encoding='UtF-8') as text:
+            message = text.read()
+        print(message)
+        self.sender(message=message)
 
     def show_lider(self):
         sp_ld = list()
@@ -309,7 +313,7 @@ class Event_Commands(Base):
         if flag_2:
             self.event_sender(dump(param='wait'))
         else:
-            if self.payload['type'] == 'accept':
+            if self.type == 'accept':
                 """opt - одно из [камень, ножницы, бумага]"""
 
                 preparation[id_1] = {'id': id_2, 'opt': None, 'time': date.now(), 'peer_id': self.peer_id}
@@ -334,7 +338,7 @@ class Event_Commands(Base):
         id_2 = preparation[self.user_id]['id']  # user_id_2
 
         if not preparation[self.user_id]['opt']:
-            preparation[self.user_id]['opt'] = self.payload['type']
+            preparation[self.user_id]['opt'] = self.type
         if preparation[id_2]['opt'] and preparation[self.user_id]['opt']:
             db_sess = db_session.create_session()
 
@@ -420,7 +424,7 @@ class Event_Commands(Base):
         step: bool = pick_character[self.user_id]['step']
         enemy_id: int = pick_character[self.user_id]['enemy_id']
 
-        unit: str = self.payload['type']
+        unit: str = self.type
 
         person: dict = decoding_orm(data_character, unit)[unit]
         d_lvl, a_lvl, h_lvl = person['d_lvl'], person['a_lvl'], person['h_lvl']
@@ -592,7 +596,7 @@ class Event_Commands(Base):
         target = game[self.user_id]['target']
         line_shot = game[self.user_id]['line_shot']
         moving = game[self.user_id]['move']
-        type_button = self.payload['type']
+        type_button = self.type
 
         if target is None and type_button in ('_body_', '_head_'):
             """Выбор куда стрелять: Голова, тело"""

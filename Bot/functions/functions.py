@@ -1,5 +1,5 @@
 from vk_api.keyboard import VkKeyboard
-from button import pop_up, speech
+from Bot.button import pop_up, speech
 from random import choice
 import json
 import random
