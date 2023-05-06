@@ -13,12 +13,12 @@ KeyBoardDoc --> https://dev.vk.com/api/bots/development/keyboard
 a = {'label': '___', 'color': None, 'payload': {'type': '___'}}
 
 BUTTONS_SETTINGS: dict[str, dict] = {
-    'accept': {'label': 'принять', 'color': GREEN, 'payload': {'type': 'accept', 'ids': None}},
-    'deny': {'label': 'отказать', 'color': RED, 'payload': {'type': 'deny', 'ids': None}},
+    'accept': {'label': 'принять', 'color': GREEN, 'payload': {'type': 'accept', 'ids': []}},
+    'deny': {'label': 'отказать', 'color': RED, 'payload': {'type': 'deny', 'ids': []}},
 
-    'rock': {'label': 'Камень', 'color': RED, 'payload': {'type': 'rock', 'squad': 'rps', 'ids': None}},
-    'paper': {'label': 'Бумага', 'color': WHITE, 'payload': {'type': 'paper', 'squad': 'rps', 'ids': None}},
-    'scissors': {'label': 'Ножницы', 'color': GREEN, 'payload': {'type': 'scissors', 'squad': 'rps', 'ids': None}},
+    'rock': {'label': 'Камень', 'color': RED, 'payload': {'type': 'rock', 'squad': 'rps', 'ids': []}},
+    'paper': {'label': 'Бумага', 'color': WHITE, 'payload': {'type': 'paper', 'squad': 'rps', 'ids': []}},
+    'scissors': {'label': 'Ножницы', 'color': GREEN, 'payload': {'type': 'scissors', 'squad': 'rps', 'ids': []}},
 
     'sniper': {'label': 'Снайпер', 'color': RED, 'payload': {'type': 'sniper', 'squad': 'class'}},
     'solder': {'label': 'Солдат', 'color': BLUE, 'payload': {'type': 'solder', 'squad': 'class'}},

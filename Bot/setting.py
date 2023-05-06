@@ -2,18 +2,9 @@ import json
 import pprint
 
 setting = {
-    'token': 'vk1.a.hI1q03fpbvvPNnai_zoiv75AykKS2cjusMeB9HYunyvz7tmLnP5v7MfQrZcE5K9CiI6cCbIlLn0K_5019ySGEhJfD_lq'
-             'f0qITVlPOC1fPZUEU6AquMUDy0ZrgGHZDm0pPyc_k4cKekFBhy4lDMps71vHyw28gtUVi3Dk9V5xK07QAkRZkgRNbsU8BcpJ8r3g'
-             '0xDpsyRn5ht8H1h_aCRaYw',
-    'token_2': 'vk1.a.eETYoz9jgvp4m_F_mr_3pkwCWA2k32Gkz-VfxsrbGUQlVU1owrQtlBjVVcDvELhLpMF_yDSXUL1nkHteCfs9ToVcsLn'
-               'JR8zNrfp9Pz4OAWpKr6fI8-YOLpAejhXqiq4pJmmeX7ANWw0f72JsbQ62rPwIz33GiPpASMj_ZkkRPI2obu0GtMuY9y77DpAJYzG'
-               '0g6ret8OHTfMZg7nTgNGVag',
+    'token_2': 'vk1.a.gCpL6_y7QoMi3FXhI9mKf9Cx0iliqHI96HpcmI88OoPfQQnvfWyP6x18A17hZOoqnYtKMKULt3gMVVfBKNG8Mk8e2PxVAzb'
+               '4FVHKoGZg2h-9dnrf4SZFRXd9SVUULTj7PRkan0aHPTAJnWXHylbPjsOCXiDWTbpQZuiblbYKJ7BFMEyfl062KbOHIP9d'
+               '8RwZr0gimNO8Cd5gqFQ12mWxRw',
     'group_id': '218947192',
     'app_id': '6441755'
 }
-setting_2 = {
-    'token': 'vk1.a.H1I9sFDLxB0H6GNe0nP6c2BkvA0ZgHihkOh4p0ic-L_fIaeDlesP3InYIh5OuQc79fVJ2YhIcsE84dkALWtdeSahJlwFuGnv9'
-             'ViA4YCLzwx8aoVCYtGHq8_b-aBTzSypYW0r5MbPZtoFSxurTpfcUogUlJBI4LZSebJNXPYQ3EL5VG6Ip04aPhjP_EkN9CU_rAAMLm0'
-             'LUX5DDi5ag8FuFA',
-    'group_id': '216846245',
-    'app_id': '6441755'}

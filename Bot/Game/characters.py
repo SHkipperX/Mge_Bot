@@ -1,7 +1,7 @@
 from typing import Optional, Tuple, Union
 
-from stats import Damage, Accuracy, Health, Splash, CurDamage
-from constants import TARGET_HEAD, TARGET_BODY, SNIPER_STATS, SNIPER_HEAD_ACCURACY, SOLDIER_STATS, DEMOMAN_STATS
+from Bot.Game.stats import Damage, Accuracy, Health, Splash, CurDamage
+from Bot.Game.constants import TARGET_HEAD, TARGET_BODY, SNIPER_STATS, SNIPER_HEAD_ACCURACY, SOLDIER_STATS, DEMOMAN_STATS
 
 
 class BaseCharacter:

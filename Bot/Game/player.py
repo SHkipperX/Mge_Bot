@@ -1,7 +1,7 @@
 from __future__ import annotations
-from characters import Sniper, Demoman, Soldier, TARGET_BODY, BaseCharacter
-from constants import SIDE_NONE
-from stats import Side
+from Bot.Game.characters import Sniper, Demoman, Soldier, TARGET_BODY, BaseCharacter
+from Bot.Game.constants import SIDE_NONE
+from Bot.Game.stats import Side
 
 
 class Player:

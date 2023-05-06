@@ -3,7 +3,7 @@ from typing import Optional, Tuple, Union
 
 from random import random, triangular
 
-from constants import SIDE_NONE, SIDE_LEFT, SIDE_RIGHT
+from Bot.Game.constants import SIDE_NONE
 
 
 class Side:
